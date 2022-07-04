@@ -7,12 +7,22 @@
 
   R.A.Lincoln     July 2022
 
+  Hardware:
+    Arduino Nano 33 IOT
+
+  Libraries required:
+    WiFiNINA
+    MDNS_Generic
+
+
   Poll the inveter for values periodically
   Respond to web clients requesting the latest address data
 
   Maintain a list of requested address (from any client)
 
   Webserver content:
+
+  http://solis-inverter.local
 
   /                               'Hello world' base page
 
@@ -42,6 +52,16 @@
  */
 #include <SPI.h>
 #include <WiFiNINA.h>
+#include <MDNS_Generic.h>
+
+//  Used in mDNS discovery - i.e. hostname.local or bonjour name
+#define HOSTNAME "solis-inverter"
+#define SERVICENAME "solis-inveter._http"
+
+//  Register collection frequency
+#define COLLECT_MILLIS 1000*60 // Collect data every 60 seconds
+
+
 
 //  WIFI server
 #include "arduino_secrets.h"
@@ -50,15 +70,15 @@ char pass[] = SECRET_PASS;  // your network password (use for WPA, or use as key
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
+//  mDNS service broadcast
+WiFiUDP udp;
+MDNS mdns(udp);
+
 //  Register cache
 #include "RegisterCache.h"
 
 //  Webserver
 #include "WebServer.h"
-
-
-//  Register collection
-#define COLLECT_MILLIS (unsigned long)1000*60 // Collect data every 60 seconds
 
 
 
@@ -90,8 +110,16 @@ void setup() {
     status = WiFi.begin(ssid, pass);  // Connect to WPA/WPA2 network.
   } while (status != WL_CONNECTED);
 
-  server.begin();                     // start the web server on port 80
   printWifiStatus();                  // you're connected now, so print out the status
+
+  server.begin();                     // start the web server on port 80
+
+  //  Register for access via hostname.local 
+  mdns.begin(WiFi.localIP(), HOSTNAME);
+
+  //  Register for access via Bonjour
+  mdns.addServiceRecord(SERVICENAME, 80, MDNSServiceTCP);
+
 }
 
 
@@ -116,6 +144,9 @@ void loop() {
     }
   }
 
+  //  mDNS
+  //
+  mdns.run();
 
   //  Webserver
   //  Service HTTP requests formatting into lines for parsing
