@@ -6,7 +6,7 @@ Avoiding Raspberry PI solutions due to current unavailability and trying to mini
 
 Current state:
 
-Basic web server & internal cross client cache working
+Basic web server & internal cross client cache working answering to solis-inverter.local
 Inverter integration not started
 
 Intention:
