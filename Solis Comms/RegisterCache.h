@@ -1,6 +1,8 @@
 /*
 
     RegisterCache.h
+    https://github.com/RichardL64
+    
     Manage a central list of register address/data pairs to update from the inverter
 
     Client requests get pooled so the inverter load, responding to requests scales by the number of registers

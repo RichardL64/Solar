@@ -1,6 +1,8 @@
 /*
 
   Solis Comms
+  https://github.com/RichardL64
+  
   Talk to RS485/Modbus port on a Solis inverter and make available via HTTP protocol
 
   R.A.Lincoln     July 2022

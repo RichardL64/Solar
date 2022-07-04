@@ -1,5 +1,8 @@
 /*
+
     RegisterCache
+    https://github.com/RichardL64
+
     Manage a central list of register address/data pairs to update from the inverter
 
     The list is populated by any client requesting a register, then data updated once for all clients periodically
