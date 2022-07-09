@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+</head>
+
+<!--
+
+	Proof concept client for Arduino gathering of SOLIS inverter data
+	
+	This must be served from the Arduino -or- cross origin restrictions turned off
+	
+	Uses
+		SVC Gauges https://github.com/naikus/svg-gauge
+		Modified for zero center stroke gauges with +- limits
+		
+	R.Lincoln		July 2022
+	
+-->
+
+<script src="gauge.js"></script>
+
+<style>
+
+body {
+	font-family: Verdana, sans-serif;
+}
+
+.gauge-container {
+    width:300px;
+	height:200px;
+	overflow:hidden; 			
+	padding:10px;
+	float:left;
+}
+.gauge-container > .gauge .dial {
+	stroke-width: 5;
+}
+.gauge-container > .gauge .value {
+	stroke:cornflowerblue;
+  	stroke-width: 5;
+}
+
+#gauges {
+	width:960px;
+	margin:auto;
+/*	border:1px solid black; 	*/
+}
+
+#battSOCG {
+	margin:auto;
+	float:none;
+}
+#battSOCG > .gauge .value {
+	stroke:darkseagreen;
+}
+
+</style>
+
+<body>
+
+<div id="gauges">
+		<div id="solarG" class="gauge-container">
+		Solar
+		</div>
+		<div id="batteryG" class="gauge-container">
+		Battery
+		</div>
+		<div id="gridG" class="gauge-container">
+		Grid
+		</div>
+		<div id="battSOCG" class="gauge-container">
+		</div>
+</div>
+
+<script>
+  var solarG = Gauge(
+    document.getElementById("solarG"),
+    {
+      max: 4000,
+      dialStartAngle: 170,
+      dialEndAngle: 10,
+      value: 0,
+      label: function(value) {
+        		return (value/1000).toFixed(2) + "kW";
+      		  }
+    }
+  );
+  var batteryG = Gauge(
+    document.getElementById("batteryG"),
+    {
+      min: -3500,
+      max: 3500,
+      dialStartAngle: 170,
+      dialEndAngle: 10,
+      value: 0,
+      label: function(value) {
+        		return (value/1000).toFixed(2) + "kW";
+      		  }
+    }
+  );
+  var battSOCG = Gauge(
+    document.getElementById("battSOCG"),
+    {
+      min: 0,
+      max: 100,
+      dialStartAngle: 170,
+      dialEndAngle: 10,
+      value: 0,
+      label: function(value) {
+        		return value.toFixed(0) + "%";
+      		  }
+    }
+  );
+  var gridG = Gauge(
+    document.getElementById("gridG"),
+    {
+      min: -5000,
+      max: 5000,
+      dialStartAngle: 170,
+      dialEndAngle: 10,
+      value: 0,
+      label: function(value) {
+        		return (value/1000).toFixed(2) + "kW";
+      		  }
+    }
+  );
+  
+  
+//      fetch('http://time.jsontest.com')  ? doesn't warn about cross site urls ?
+
+	// Gauge values update from the server
+	//
+	function update() {
+	
+		fetch('http://solis.local/R?address=33057.2,33135,33149.2,33139,33130.2')
+        .then(res => res.text())					// Temp text & manual parsing
+        .then(data => {
+        	console.log(data);
+        	let s = data.indexOf(":");
+        	let e = data.indexOf(",", s);
+        	let v1 = data.substring(s +1, e);
+        	console.log(v1);
+        	solarG.setValueAnimated(v1, 2);			// Solar W
+
+        	s = data.indexOf(":", e);
+        	e = data.indexOf(",", s);
+        	let v2 = data.substring(s +1, e);		// 0=charge, 1=discharge
+        	console.log(v2);
+
+        	s = data.indexOf(":", e);
+        	e = data.indexOf(",", s);
+        	let v3 = data.substring(s +1, e);		// Battery W
+        	console.log(v3);
+			if(v2 == 1) v3 = -v3;
+			batteryG.setValueAnimated(v3, 2);
+
+        	s = data.indexOf(":", e);
+        	e = data.indexOf(",", s);
+        	let v4 = data.substring(s +1, e);		// Battery SOC %
+        	console.log(v4);
+			battSOCG.setValueAnimated(v4, 2);
+
+        	s = data.indexOf(":", e);
+        	e = data.indexOf("}", s);
+        	let v5 = data.substring(s +1, e);		// Grid
+        	console.log(v5);
+			gridG.setValueAnimated(v5, 2);
+
+        	})
+//        .catch(err => console.error(err))
+		.finally(() => {
+			setTimeout(update,2000);				// Auto refresh, call myself
+			});
+	}
+	
+	//	Start updates
+	//
+	update();
+	
+</script>
+
+</body>
+
+</html>
