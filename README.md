@@ -4,12 +4,17 @@ The inverter and batteries expose RS485 integration potential.
 
 Avoiding Raspberry PI solutions due to current unavailability and trying to minimise solution complexity
 
-Current state:
+#Current state:
 
-Basic web server & internal cross client cache working answering to solis-inverter.local
-Inverter integration not started
+ - Arduino web server & internal cross client cache answering to solis.local
+ - Inverter integration working with Modbus/RS485 connection.
+ - Basic HTML/JS Dashboard consumer showing real time/~2 second updates.
 
-Intention:
+#Known issues:
+
+mDNS seems to timeout/lockup periodically requiring a ping to the servers IP address to wake up
+
+#Intention:
 
 Solis inverter RS485/Modbus integration with Arduino Nano 33 IOT micro webserver
 Provide local network access to the Solis registers over HTTP/Simple web pages
