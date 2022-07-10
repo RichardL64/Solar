@@ -1,8 +1,8 @@
 # Solar
-Solis inverter / Pylontech battery arduino integration for remote panel etc outside the cloud.
+Solis inverter / Pylontech battery arduino integration for remote panel etc without a dependency on third party cloud services.
 The inverter and batteries expose RS485 integration potential.
 
-Avoiding Raspberry PI solutions due to current unavailability and trying to minimise solution complexity
+Arduino seems lighter/simpler for, effectively an HTML data and Webserver front end on the inverter.
 
 Current state:
 
@@ -18,5 +18,6 @@ mDNS seems to timeout/lockup periodically requiring a ping to the servers IP add
 Intention:
 
 Local physical, moving coil, meter readouts for inverter real time data display.
-Simple as possible - avoiding cloud integration.
+
+Potential to locally consuming any inverter parameter for logical control of other devices.
 
