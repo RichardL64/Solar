@@ -31,11 +31,6 @@ body {
 	font-family: Verdana, sans-serif;
 }
 
-.gauge-container {
-    width:300px;
-	padding:10px;
-	float:left;
-}
 .gauge-container > .gauge .dial {
 	stroke-width: 5;
 }
@@ -45,15 +40,14 @@ body {
 }
 
 #gauges {
-	width:960px;
-	margin:auto;
+	width:90%;
+	margin:auto; 
+	display:grid;
+	grid-template-columns: auto auto auto;
+	
 /*	border:1px solid black; 	*/
 }
 
-#battSOCG {
-	margin:auto;
-	float:none;
-}
 #battSOCG > .gauge .value {
 	stroke:darkseagreen;
 }
@@ -71,6 +65,8 @@ body {
 		</div>
 		<div id="gridG" class="gauge-container">
 		Grid
+		</div>
+		<div>
 		</div>
 		<div id="battSOCG" class="gauge-container">
 		</div>
@@ -176,6 +172,8 @@ body {
 			
 	}
 	
+	//	Startup
+	//
 	const URL = inverterURL()								// URL from ?inverter=
 	update();												// Start updates!
 	
