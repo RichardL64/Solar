@@ -10,6 +10,10 @@
 
 	Proof concept dashboard for Arduino gathering of SOLIS inverter data
 	
+	Parameters
+		?inverter=solis.local -or- ?inverter=192.168.1.143
+		Workaround for mDNS instability - explicit server referencing
+
 	Uses
 		SVC Gauges https://github.com/naikus/svg-gauge
 		Modified for zero center stroke gauges with +- limits
@@ -29,8 +33,6 @@ body {
 
 .gauge-container {
     width:300px;
-	height:200px;
-	overflow:hidden; 			
 	padding:10px;
 	float:left;
 }
@@ -75,60 +77,72 @@ body {
 </div>
 
 <script>
-  var solarG = Gauge(
-    document.getElementById("solarG"),
-    {
-      max: 4000,
-      dialStartAngle: 170,
-      dialEndAngle: 10,
-      value: 0,
-      label: function(value) {
+	//	Parse the inverter URL parameter
+	//
+	function inverterURL() {
+		const queryString = window.location.search;
+		console.log(queryString);
+		
+		const urlParams = new URLSearchParams(queryString);
+		var inverterURL = urlParams.get('inverter')
+		console.log(inverterURL);
+		
+		if(inverterURL == null) inverterURL = "solis.local";
+		
+		return inverterURL;
+	}
+
+	//	Setup Gauges
+	//
+	var solarG = Gauge(document.getElementById("solarG"),
+    	{
+    		max: 4000,
+      		dialStartAngle: 170,
+      		dialEndAngle: 10,
+      		viewBox: "0 0 100 60",
+      		label: function(value) {
         		return (value/1000).toFixed(2) + "kW";
-      		  }
-    }
-  );
-  var batteryG = Gauge(
-    document.getElementById("batteryG"),
-    {
-      min: -3500,
-      max: 3500,
-      dialStartAngle: 170,
-      dialEndAngle: 10,
-      value: 0,
-      label: function(value) {
+      		  	}
+		});
+		
+	var batteryG = Gauge(document.getElementById("batteryG"),
+    	{
+      		min: -3500,
+      		max: 3500,
+      		dialStartAngle: 170,
+      		dialEndAngle: 10,
+      		viewBox: "0 0 100 60",
+      		label: function(value) {
         		return (value/1000).toFixed(2) + "kW";
-      		  }
-    }
-  );
-  var battSOCG = Gauge(
-    document.getElementById("battSOCG"),
-    {
-      min: 0,
-      max: 100,
-      dialStartAngle: 170,
-      dialEndAngle: 10,
-      value: 0,
-      label: function(value) {
+      			}
+		});
+		
+  	var battSOCG = Gauge(document.getElementById("battSOCG"),
+		{
+      		min: 0,
+      		max: 100,
+      		dialStartAngle: 170,
+      		dialEndAngle: 10,
+      		viewBox: "0 0 100 60",
+      		label: function(value) {
         		return value.toFixed(0) + "%";
-      		  }
-    }
-  );
-  var gridG = Gauge(
-    document.getElementById("gridG"),
-    {
-      min: -10000,
-      max: 10000,
-      dialStartAngle: 170,
-      dialEndAngle: 10,
-      value: 0,
-      label: function(value) {
+      			}
+    	});
+    	
+	var gridG = Gauge(document.getElementById("gridG"),
+		{
+      		min: -10000,
+      		max: 10000,
+      		dialStartAngle: 170,
+      		dialEndAngle: 10,
+      		viewBox: "0 0 100 60",
+      		label: function(value) {
         		return (value/1000).toFixed(2) + "kW";
-      		  }
-    }
-  );
+      			}
+    	});
   
   
-	// Gauge values update from the server
+	// Update gauge values from the server
 	//
 	function update() {
 	
@@ -139,21 +153,22 @@ body {
 			solarG.setValueAnimated(json["101"], 2);
 */
 
-		fetch('http://solis.local/R?address=33057.2,33135,33149.2,33139,33130.2')
+		fetch('http://' + URL + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
+//		fetch('http://solis.local/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
         .then(res => res.json())
         .then(json => {
         	console.log(json);
  
         	solarG.setValueAnimated(json[33057], 2);		// Solar W
 
-        	let battW = json[33149];						// W
+        	let battW = json[33149];						// Battery W
         	if(json[33135] == 1) battW = -battW				// 0=chg, 1=dischg
-			batteryG.setValueAnimated(battW, 2);			// Battery W
+			batteryG.setValueAnimated(battW, 2);
 
 			battSOCG.setValueAnimated(json[33139], 2);		// Battery SOC%
         	gridG.setValueAnimated(json[33130], 2);			// Grid
-
         	})
+        	
         .catch(err => console.error(err))
 		.finally(() => {
 			setTimeout(update,2000);						// Auto refresh
@@ -161,9 +176,8 @@ body {
 			
 	}
 	
-	//	Start updates
-	//
-	update();
+	const URL = inverterURL()								// URL from ?inverter=
+	update();												// Start updates!
 	
 </script>
 
