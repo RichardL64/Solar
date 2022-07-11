@@ -8,11 +8,11 @@
 
 <!--
 
-	Proof concept dashboard for Arduino gathering of SOLIS inverter data
+	Proof concept dashboard to present Arduino gathered SOLIS inverter data
 	
 	Parameters
 		?inverter=solis.local -or- ?inverter=192.168.1.143
-		Workaround for mDNS instability - explicit server referencing
+		Automatically replaced with the live IP addresss when served from the Arduino
 
 	Uses
 		SVC Gauges https://github.com/naikus/svg-gauge
@@ -70,6 +70,8 @@ body {
 		</div>
 		<div id="battSOCG" class="gauge-container">
 		</div>
+		<div>
+		</div>
 </div>
 
 <script>
@@ -83,6 +85,9 @@ body {
 		var inverterURL = urlParams.get('inverter')
 		console.log(inverterURL);
 		
+		//	Default value if none passed
+		//	Replaced with the live IP address when served from the Arduino
+		//
 		if(inverterURL == null) inverterURL = "solis.local";
 		
 		return inverterURL;
