@@ -14,8 +14,9 @@ Current state:
 
 Known issues:
 
-mDNS seems to timeout/lockup periodically requiring a ping to the servers IP address to wake up
-Using IP address directly to workaround
+- mDNS broken in current build
+- mDNS seems to timeout/lockup periodically
+  Using it only for discovery - re regular update callback uses a returned IP.
 
 Intention:
 
