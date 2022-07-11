@@ -24,3 +24,4 @@ Local physical, moving coil, meter readouts for inverter real time data display.
 
 Potential to locally consuming any inverter parameter for logical control of other devices.
 
+![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.png)
