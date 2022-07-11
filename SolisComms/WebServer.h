@@ -7,4 +7,8 @@
 
 */
 
+#include "Gauge.js.h"
+#include "SolisDashboard.html.h"
+
 void httpHeader(WiFiClient client, int refresh=0);
+void httpPrint(WiFiClient client, const char *data, int l = -1);

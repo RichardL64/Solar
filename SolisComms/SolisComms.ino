@@ -26,6 +26,8 @@
 
   http://solis.local
 
+  /dashboard                      Real time gauge dashboard of Inverter information
+  
   /                               'Hello world' base page
 
   /H                              Turn the onboard LED on
@@ -82,10 +84,10 @@
 
 //  Used in mDNS discovery - i.e. hostname.local or bonjour name
 #define HOSTNAME "solis"
-#define SERVICENAME "solis._http"
+#define SERVICENAME "._http"
 
 //  Data collection - ms between register requests
-#define COLLECT_GAP 20
+#define MODBUS_DELAY 20
 
 
 //  WIFI server
@@ -155,7 +157,7 @@ void loop() {
       state++;
       break;
       
-    case 1:                                     // connected, re publish mDNS etc
+    case 1:                                     // connected, (re)publish mDNS etc
       printWifiStatus();     
                      
       Serial.println("mDNS update");
@@ -177,7 +179,7 @@ void loop() {
 
   int address =  cacheAddress[index];
   if(address != 0
-    && (lastCollect + COLLECT_GAP) < millis()) {            // if there is an address to collect & not too frequent
+    && (lastCollect + MODBUS_DELAY) < millis()) {           // if there is an address to collect & not too frequent
     lastCollect = millis();
 
     Serial.print(address);
@@ -199,20 +201,16 @@ void loop() {
     }
   }
   
-  // Useful for offline testing, address 101 returns a random integer
-  if(address == 101) setCache(index, random(0, 1000));   
+  if(address == 101) setCache(index, random(0, 1000));      // Random number test data on 101  
   
-  index++;                                                  // Increment for next loop
+  index++;                                                  // Next cache entry for next loop
   index %= CACHE_SIZE;                                      // Limit 0 ... CACHE_SIZE -1
 
 
-  //  mDNS
-  //
-  mdns.run();
-
-  //  Webserver
+  //  If network connectivity is up
   //
   if(state == 2) {
+    mdns.run();
     serviceWiFi();
   }
   
@@ -243,6 +241,7 @@ void printWifiStatus() {
   Serial.println(".local");
 }
 
-//  Reset the arduino
+//  Example Arduino reset code
 //
-void(* resetFunc) (void) = 0;
+//  void(* resetFunc) (void) = 0;
+//

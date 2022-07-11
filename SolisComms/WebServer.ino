@@ -23,9 +23,11 @@ void serviceWiFi() {
   if (!client) return;
 
   Serial.println("new client");
+  
   String line = nextLine(client);
   parseLine(client, line);                // drive from the first line of each request
-  client.stop();                          // disconnect client
+  client.stop();                          // disconnect
+  
   Serial.println("client disconnected");
 }
 
@@ -56,7 +58,7 @@ String nextLine(WiFiClient client) {
 }
 
 //  Parse an inbound line from the client
-//  Call client.stop() to finalise the client conversation
+//  Creates any activity and HTML response required
 //
 void parseLine(WiFiClient client, const String &line) {
   Serial.println(line);
@@ -75,6 +77,31 @@ void parseLine(WiFiClient client, const String &line) {
     httpFooter(client);
   }
 
+  //  The dashboard HTML is modified to insert the actual server IP address for callbacks.
+  //  We search for "<script>" and then "solis.local" - the latter is replaced with the current IP
+  //  The HTML is read only so replacement is done dnymaically on writing
+  //
+  if(line.startsWith("GET /dashboard")) {      // /dashboard?url=<value>
+    httpHeader(client);
+
+    char *script = strstr(dashboardHtml, "<script>");             // Script part of the HTML
+    char *url = strstr(script, HOSTNAME);                         // URL to replace
+    char *quote = strstr(url, "\"");                              // following "
+
+    httpPrint(client, dashboardHtml, url - dashboardHtml);       // Print until the URL
+    client.print(WiFi.localIP());                                // Insert the live IP address
+    httpPrint(client, quote);                                    // From the training quote to the end
+        
+    httpFooter(client);
+  }
+
+  if(line.startsWith("GET /gauge.js")) {
+    httpHeader(client);
+    httpPrint(client, gaugeHtml);
+    client.println("// EOF");
+    httpFooter(client);    
+  }
+  
   if(line.startsWith("GET /AP")) {            // Access point config            /AP?SSID=<value>&PASSWORD=<value>
     int pos = 0;    
     String ssid, password;
@@ -173,6 +200,23 @@ void httpHeader(WiFiClient client, int refresh) {
 void httpFooter(WiFiClient client) {
     client.println();
 }
+
+//  WiFi.Client write/print over around 4k trashes data
+//  Breakup large files into ~4k chunks for output
+//  If the length is passed its used, otherwise writes to end of string \0
+//
+#define HTTP_PRINT_CHUNK 4000
+
+void httpPrint(WiFiClient client, const char *data, int length) {
+    if(length == -1) length = strlen(data);
+    const char* p = data;
+    for(; length > HTTP_PRINT_CHUNK; length -= HTTP_PRINT_CHUNK) {
+      client.write(p, HTTP_PRINT_CHUNK);      // 4k chunk
+      p += HTTP_PRINT_CHUNK;
+    }
+    client.write(p, length);                  // <4k left over
+}
+
 
 //  Return the first index of any of the search string chars in line string after start
 //
