@@ -6,7 +6,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 Current state:
 
- - Self contained dashboard available from <ip>/dashboard
+ - Self contained/zero install dashboard served from the Arduino at path <ip>/dashboard
  
  - Arduino web server & internal cross client cache
  - Inverter integration working with Modbus/RS485 connection.
