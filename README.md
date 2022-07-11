@@ -6,14 +6,16 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 Current state:
 
- - Arduino web server & internal cross client cache answering to solis.local
+ - Self contained dashboard available from <ip>/dashboard
+ 
+ - Arduino web server & internal cross client cache
  - Inverter integration working with Modbus/RS485 connection.
  - Basic HTML/JS Dashboard consumer showing real time/~2 second updates.
 
 Known issues:
 
 mDNS seems to timeout/lockup periodically requiring a ping to the servers IP address to wake up
-
+Using IP address directly to workaround
 
 Intention:
 
