@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta charset="utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css">
   <title></title>
 </head>
 
 <!--
 
-	Proof concept dashboard to present Arduino gathered SOLIS inverter data
+	Proof concept dashboard to present Arduino gathered live SOLIS inverter data
 	
 	Parameters
 		?inverter=solis.local -or- ?inverter=192.168.1.143
@@ -28,22 +28,23 @@
 <style>
 
 body {
-	font-family: Verdana, sans-serif;
+	font-family: sans-serif;
 }
 
 .gauge-container > .gauge .dial {
-	stroke-width: 5;
+	stroke-width: 6;
 }
 .gauge-container > .gauge .value {
 	stroke:cornflowerblue;
-  	stroke-width: 5;
+  	stroke-width: 6;
 }
 
 #gauges {
 	width:90%;
 	margin:auto; 
 	display:grid;
-	grid-template-columns: auto auto auto;
+	grid-template-columns: 1fr 1fr 1fr;
+	padding: 10px;
 	
 /*	border:1px solid black; 	*/
 }
@@ -51,6 +52,10 @@ body {
 #battSOCG > .gauge .value {
 	stroke:darkseagreen;
 }
+
+#time {
+	float:right;
+}	
 
 </style>
 
@@ -66,11 +71,18 @@ body {
 		<div id="gridG" class="gauge-container">
 		Grid
 		</div>
-		<div>
-		</div>
+		<div></div>
 		<div id="battSOCG" class="gauge-container">
 		</div>
 		<div>
+		</div>
+		<div>
+			Inverter temp. <label id="temp"></label>&#176C
+		</div>
+		<div>
+		</div>
+		<div>
+			<label id="time"></label>
 		</div>
 </div>
 
@@ -133,7 +145,7 @@ body {
 	var gridG = Gauge(document.getElementById("gridG"),
 		{
       		min: -10000,
-      		max: 10000,
+      		max: 3600,
       		dialStartAngle: 170,
       		dialEndAngle: 10,
       		viewBox: "0 0 100 60",
@@ -142,9 +154,10 @@ body {
       			}
     	});
   
-  
+  	
 	// Update gauge values from the server
 	//
+	var lastUpdate =0;
 	function update() {
 	
 /*		Offline testing with random numbers
@@ -155,7 +168,6 @@ body {
 */
 
 		fetch('http://' + URL + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
-//		fetch('http://solis.local/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
         .then(res => res.json())
         .then(json => {
         	console.log(json);
@@ -168,6 +180,11 @@ body {
 
 			battSOCG.setValueAnimated(json[33139], 2);		// Battery SOC%
         	gridG.setValueAnimated(json[33130], 2);			// Grid
+ 
+ 			document.getElementById("temp").innerHTML = (json[33093]/10).toFixed(1);	// Temp
+ 			
+ 			//	Watchdog - record the last time we got data
+ 			lastUpdate = Date.now();
         	})
         	
         .catch(err => console.error(err))
@@ -176,10 +193,23 @@ body {
 			});
 			
 	}
+
+	//	Provided the update loop ran in the last few seconds, update the time
+	//	
+	function time() {
+		if(Date.now() - lastUpdate > 5000) {
+	       	document.getElementById("time").innerHTML = "(Waiting for data)";
+	    } else {			
+			var now = new Date();
+	       	document.getElementById("time").innerHTML = "Updated at " + now.toLocaleTimeString();
+	    }
+	    setTimeout(time,1000);
+ 	}
 	
 	//	Startup
 	//
 	const URL = inverterURL()								// URL from ?inverter=
+	time();
 	update();												// Start updates!
 	
 </script>

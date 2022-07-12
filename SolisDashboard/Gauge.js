@@ -285,8 +285,7 @@
 		//		calc the 0 point and draw left or right from it
 		//		
 		} else {
-			var mid = getValueInPercentage((min+limit)/2, min, limit),
-				midA = getAngle(mid, 360 - Math.abs(startAngle - endAngle))+startAngle;
+			var	midA = getAngle(50, 360 - Math.abs(startAngle - endAngle))+startAngle;
 
 			if(theValue < 0) {									// draw value to midA
 				val = getValueInPercentage(theValue, min, 0);
