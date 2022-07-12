@@ -8,7 +8,7 @@
     https://github.com/naikus/svg-gauge
 
 
-    To allow storage in progmeme, wrapped in:
+    To allow storage in progmeme, cut/paste the HTML between:
       const char *dashboardHtml = R"====(
                                   )====";
 
@@ -49,7 +49,7 @@ const char *gaugeHtml = R"====(
    * Options are:
    * {
    *  duration: 1,    // In seconds
-   *  start: 0, 	// The start value
+   *  start: 0,   // The start value
    *  end: 100,       // The end value
    *  step: function, // REQUIRED! The step function that will be passed the value and does something
    *  easing: function // The easing function. Default is easeInOutCubic
@@ -70,18 +70,20 @@ const char *gaugeHtml = R"====(
         };
 
     function animate() {
-      var progress = currentIteration / iterations;		// 0..1
+      var progress = currentIteration / iterations;   // 0..1
       var value = change * easing(progress) + start;
-      step(value, currentIteration);					// update the gauge
+      step(value, currentIteration);          // update the gauge
       currentIteration += 1;
 
-      if(progress < 1) {								// 1 = finished
-        requestAnimationFrame(animate);					// call myself via browser
+      if(progress < 1) {                // 1 = finished
+        requestAnimationFrame(animate);         // call myself via browser
       }
     }
 
-    requestAnimationFrame(animate);						// Start!
+    requestAnimationFrame(animate);           // Start!
   }
+
+
 
   var Gauge = (function() {
     var SVG_NS = "http://www.w3.org/2000/svg";
@@ -187,7 +189,7 @@ const char *gaugeHtml = R"====(
           cy = GaugeDefaults.centerY;
       return {
         end: getCartesian(cx, cy, radius, endAngle),
-      	start: getCartesian(cx, cy, radius, startAngle)
+        start: getCartesian(cx, cy, radius, startAngle)
       };
     }
 
@@ -287,39 +289,38 @@ const char *gaugeHtml = R"====(
 
       function updateGauge(theValue, frame) {
         if(displayValue) {
-        	gaugeValueElem.textContent = label.call(opts, theValue);
+          gaugeValueElem.textContent = label.call(opts, theValue);
         }
 
-		//	All values are positive:
-		//	Draw clockwise from startAngle
-		//
-		if(min >= 0 && limit >= 0) {
-        	var val = getValueInPercentage(theValue, min, limit),
-            	angle = getAngle(val, 360 - Math.abs(startAngle - endAngle)),
-            	flag = angle <= 180 ? 0 : 1;
-	        gaugeValuePath.setAttribute("d", pathString(radius, startAngle, angle + startAngle, flag));	
-		
-		//	Else - min or limit is negative:
-		//		calc the 0 point and draw left or right from it
-		//		
-		} else {
-			var mid = getValueInPercentage((min+limit)/2, min, limit),
-				midA = getAngle(mid, 360 - Math.abs(startAngle - endAngle))+startAngle;
+    //  If min & limit are 0-n
+    //  Draw clockwise from startAngle
+    //
+    if(min >= 0 && limit >= 0) {
+          var val = getValueInPercentage(theValue, min, limit),
+              angle = getAngle(val, 360 - Math.abs(startAngle - endAngle)),
+              flag = angle <= 180 ? 0 : 1;
+          gaugeValuePath.setAttribute("d", pathString(radius, startAngle, angle + startAngle, flag)); 
+    
+    //  Else - min or limit is negative:
+    //    calc the 0 point and draw left or right from it
+    //    
+    } else {
+      var midA = getAngle(50, 360 - Math.abs(startAngle - endAngle))+startAngle;
 
-			if(theValue < 0) {									// draw value to midA
-				val = getValueInPercentage(theValue, min, 0);
-            	angle = getAngle(val, 360 - midA + endAngle);
-            	flag = angle <= 180 ? 0 : 1;
-		        gaugeValuePath.setAttribute("d", pathString(radius, startAngle + angle, midA, flag));	
+      if(theValue < 0) {                  // draw value to midA
+        val = getValueInPercentage(theValue, min, 0);
+              angle = getAngle(val, 360 - midA + endAngle);
+              flag = angle <= 180 ? 0 : 1;
+            gaugeValuePath.setAttribute("d", pathString(radius, startAngle + angle, midA, flag)); 
 
-			} else {											// draw midA to value
-				val = getValueInPercentage(theValue, 0, limit);
-            	angle = getAngle(val, 360 - midA + endAngle);
-            	flag = angle <= 180 ? 0 : 1;
-		        gaugeValuePath.setAttribute("d", pathString(radius, midA, midA + angle, flag));	
-			}
+      } else {                      // draw midA to value
+        val = getValueInPercentage(theValue, 0, limit);
+              angle = getAngle(val, 360 - midA + endAngle);
+              flag = angle <= 180 ? 0 : 1;
+            gaugeValuePath.setAttribute("d", pathString(radius, midA, midA + angle, flag)); 
+      }
 
-		}
+    }
       }
 
       function setGaugeColor(value, duration) {        
@@ -358,16 +359,16 @@ const char *gaugeHtml = R"====(
         },
 
         setValueAnimated: function(val, duration) {
-        	var oldVal = value;
-          	value = normalize(val, min, limit);
-          	if(oldVal === value) {
-            	return;
-          	}
+          var oldVal = value;
+            value = normalize(val, min, limit);
+            if(oldVal === value) {
+              return;
+            }
 
-          	if(gaugeColor) {
-            	setGaugeColor(value, duration);
-          	}
-          	
+            if(gaugeColor) {
+              setGaugeColor(value, duration);
+            }
+            
           Animation({
             start: oldVal || 0,
             end: value,

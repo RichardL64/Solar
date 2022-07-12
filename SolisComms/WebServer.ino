@@ -12,6 +12,8 @@
 
 */
 
+#define HTTP_PRINT_CHUNK 1024
+
 
 //  Check for a wifi client and service inbound HTTP requests
 //  Generally reads the first header line to create a response
@@ -81,7 +83,8 @@ void parseLine(WiFiClient client, const String &line) {
   //  We search for "<script>" and then "solis.local" - the latter is replaced with the current IP
   //  The HTML is read only so replacement is done dnymaically on writing
   //
-  if(line.startsWith("GET /dashboard")) {      // /dashboard?url=<value>
+  if(line.startsWith("GET /dashboard")
+    ||line.startsWith("GET / ")) {                                // /dashboard?url=<value>
     httpHeader(client);
 
     char *script = strstr(dashboardHtml, "<script>");             // Script part of the HTML
@@ -173,12 +176,6 @@ void parseLine(WiFiClient client, const String &line) {
     httpFooter(client);
   }
 
-  if(line.startsWith("GET / ")) {             // Home page
-    httpHeader(client);
-    client.println("Hello World<br>");
-    httpFooter(client);
-  }
-
 }
 
 //  Send the standard HTTP header
@@ -202,19 +199,17 @@ void httpFooter(WiFiClient client) {
 }
 
 //  WiFi.Client write/print over around 4k trashes data
-//  Breakup large files into ~4k chunks for output
+//  Breakup large files into <4k chunks for output
 //  If the length is passed its used, otherwise writes to end of string \0
 //
-#define HTTP_PRINT_CHUNK 4000
-
 void httpPrint(WiFiClient client, const char *data, int length) {
     if(length == -1) length = strlen(data);
     const char* p = data;
     for(; length > HTTP_PRINT_CHUNK; length -= HTTP_PRINT_CHUNK) {
-      client.write(p, HTTP_PRINT_CHUNK);      // 4k chunk
+      client.write(p, HTTP_PRINT_CHUNK);      // whole chunk
       p += HTTP_PRINT_CHUNK;
     }
-    client.write(p, length);                  // <4k left over
+    client.write(p, length);                  // partial left over
 }
 
 

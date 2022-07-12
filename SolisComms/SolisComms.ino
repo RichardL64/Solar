@@ -77,6 +77,7 @@
 
 #include "RegisterCache.h"
 #include "WebServer.h"
+#include "arduino_secrets.h"
 
 //  Used in AP mode for setup
 #define AP_SSID "solis-setup"
@@ -84,19 +85,16 @@
 
 //  Used in mDNS discovery - i.e. hostname.local or bonjour name
 #define HOSTNAME "solis"
-#define SERVICENAME "._http"
+#define SERVICENAME "solis._http"
 
 //  Data collection - ms between register requests
-#define MODBUS_DELAY 20
+#define MODBUS_DELAY 1
 
-
+/*
+ * Global objects
+ * 
+ */
 //  WIFI server
-#include "arduino_secrets.h"
-
-//  retreive ssid/password from NINA storage here
-
-char ssid[] = SECRET_SSID;  // your network SSID (name)
-char pass[] = SECRET_PASS;  // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
@@ -105,76 +103,78 @@ WiFiUDP udp;
 MDNS mdns(udp);
 
 
-
 /*
  * 
  *  Setup
+ *  May be re-called by the main loop if connectivity drops
  *  
  */
 void setup() {
-  Serial.begin(9600);                 // initialize serial communication
+  Serial.begin(9600);                               // initialize serial communication
+  
+  pinMode(LED_BUILTIN, OUTPUT);                     // LED control
+  digitalWrite(LED_BUILTIN, HIGH);                  // LED lit during setup - should go out if sucessful
 
-  randomSeed(analogRead(0));          // random used in test data generation
-
-  pinMode(LED_BUILTIN, OUTPUT);       // set the LED pin mode
-  digitalWrite(LED_BUILTIN, HIGH);    // LED lit during setup - should go out if sucessful
-
-  String fv = WiFi.firmwareVersion();
+  String fv = WiFi.firmwareVersion();               // Wifi Firmware check
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
     Serial.println("Please upgrade the firmware");
   }
 
-  // start the web server on port 80
-  server.begin();              
+  randomSeed(analogRead(0));                        // Random numbers used in test data generation
 
-  // start the Modbus RTU client
-  if (!ModbusRTUClient.begin(9600)) {
+  setupWiFi();                                      // Bring WiFi and mDNS up
+
+  Serial.println("Webserver begin");                // Bring Webserver up
+  server.begin();                              
+
+  Serial.println("Modbus begin");                   // Bring Modbus up
+  if (!ModbusRTUClient.begin(9600)) {      
     Serial.println("Modbus RTU Client start failed");
-    while (true);                       // spin
+    while (true);                                   // lockup
   }
 
   digitalWrite(LED_BUILTIN, LOW);
 }
 
+/*
+ * Setup
+ * May be called more than once at startup and if the wifi goes down
+ * 
+ */
+void setupWiFi() {
+  
+  Serial.println("WiFi begin");                     // Bring WiFi up
+  while(WiFi.status() != WL_CONNECTED) {
+    WiFi.begin(SECRET_SSID, SECRET_PASS);
+    delay(5000);
+  }
+  
+  Serial.println("mDNS begin");                     // Advertise as HOSTNAME
+  mdns.begin(WiFi.localIP(), HOSTNAME);
+  mdns.addServiceRecord(SERVICENAME, 80, MDNSServiceTCP);
 
+  printWifiStatus();
+}
+ 
 /*
  * 
  *  Main lop
  * 
  */
 void loop() {
-  static int state;
 
-  //  Wifi connect/reconnect if lost
+  //  Connectivity
   //
-  if(WiFi.status() != WL_CONNECTED) state = 0;  // detect unexpected disconnection
-
-  switch(state) {
-    case 0:                                     // not connected
-      Serial.println("Connecting");
-      WiFi.begin(ssid, pass);
-      delay(1000);
-      state++;
-      break;
-      
-    case 1:                                     // connected, (re)publish mDNS etc
-      printWifiStatus();     
-                     
-      Serial.println("mDNS update");
-      mdns.begin(WiFi.localIP(), HOSTNAME);
-      mdns.addServiceRecord(SERVICENAME, 80, MDNSServiceTCP);
-      state++;
-      break;
-      
-    default:
-      break;
-  }
+  if(WiFi.status() != WL_CONNECTED) setupWiFi();             // re-connect if disconnected
+  mdns.run();
+  serviceWiFi();
 
   //  Data collection
   //  Copy down register data values listed in the cache, one entry per loop
   //
   static unsigned long lastCollect;
   static int index;
+  
   cacheAgeCheck(index);                                     // cull unaccessed cache entries
 
   int address =  cacheAddress[index];
@@ -188,7 +188,7 @@ void loop() {
     if(!ModbusRTUClient.requestFrom(1, INPUT_REGISTERS, address, size)) {
         setCache(index, 0, DATA_ERROR);
 
-        Serial.println(" Data error");
+        Serial.println(" = Data error");
 
     } else {                                                // else good data
         long data = 0;
@@ -200,20 +200,10 @@ void loop() {
         Serial.println(data);
     }
   }
-  
   if(address == 101) setCache(index, random(0, 1000));      // Random number test data on 101  
   
   index++;                                                  // Next cache entry for next loop
-  index %= CACHE_SIZE;                                      // Limit 0 ... CACHE_SIZE -1
-
-
-  //  If network connectivity is up
-  //
-  if(state == 2) {
-    mdns.run();
-    serviceWiFi();
-  }
-  
+  index %= CACHE_SIZE;                                      // Limit 0 ... CACHE_SIZE -1  
 
   delay(1);
 }
