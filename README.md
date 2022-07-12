@@ -26,8 +26,8 @@ Current dashboard:
 ![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.PNG)
 
 Current breadboard hardware:
-  Arduino Nano 33 IOT
-  RS485 board
-  Solis Inverter RS485 port plug
+ - Arduino Nano 33 IOT
+ - RS485 board
+ - Solis Inverter RS485 port plug
 
 ![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20comms%20hardware%20test.jpeg)
