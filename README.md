@@ -22,4 +22,4 @@ Intention:
 
 - Potential to locally consuming any inverter parameter for logical control of other devices.
 
-![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.png)
+![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.PNG)
