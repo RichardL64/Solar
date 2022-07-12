@@ -6,22 +6,20 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 Current state:
 
- - Self contained/zero install dashboard served from the Arduino at path <ip>/dashboard
+ - Self contained/zero install dashboard served from the Arduino at path solis.local
  
  - Arduino web server & internal cross client cache
  - Inverter integration working with Modbus/RS485 connection.
  - Basic HTML/JS Dashboard consumer showing real time/~2 second updates.
+ - mDNS hostname to IP lookup
+ - Basic wifi reconnection on loss logic
 
 Known issues:
 
-- mDNS broken in current build
-- mDNS seems to timeout/lockup periodically
-  Using it only for discovery - re regular update callback uses a returned IP.
-
 Intention:
 
-Local physical, moving coil, meter readouts for inverter real time data display.
+- Local physical, moving coil, meter readouts for inverter real time data display.
 
-Potential to locally consuming any inverter parameter for logical control of other devices.
+- Potential to locally consuming any inverter parameter for logical control of other devices.
 
 ![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.png)
