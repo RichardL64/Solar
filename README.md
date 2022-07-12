@@ -4,7 +4,7 @@ The inverter and batteries expose RS485 integration potential.
 
 Arduino seems lighter/simpler for, effectively an HTML data and Webserver front end on the inverter.
 
-Current state:
+## Current state:
 
  - Self contained/zero install dashboard served from the Arduino at path solis.local
  
@@ -14,9 +14,11 @@ Current state:
  - mDNS hostname to IP lookup
  - Basic wifi reconnection on loss logic
 
-Known issues:
+## Known issues:
 
-Intention:
+ None,  shows NaN until the server starts sending real data
+
+## Intention:
 
 - Local physical, moving coil, meter readouts for inverter real time data display.
 
@@ -24,10 +26,10 @@ Intention:
 
 
 
-Current dashboard:
+## Current dashboard:
 ![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.PNG)
 
-Current breadboard hardware:
+## Current breadboard hardware:
  - Arduino Nano 33 IOT
  - RS485 board
  - Solis Inverter RS485 port plug
