@@ -1,9 +1,11 @@
 # SolisComms
 
 Arduino application, built on NANO 33 IOT and RS485 board
-Provides a webserver/HTTP interface to fucntionality described in SolisComms.ino
+Provides a WiFi webserver/HTTP interface to fucntionality described in SolisComms.ino
 
 The hostname is registered with mDNS so can be accessed via http://solis.local in dynamic IP address environments.
+
+Local network access only - no security.
 
 The application ayschronously polls the Inverter via Modbus/RS485 for values of its internal registers.
 The register list to poll is maintained based on HTTP requests from remote clients.
