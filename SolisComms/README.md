@@ -13,6 +13,8 @@ The register list to poll is maintained based on HTTP requests from remote clien
 The single register list is maintained across all clients and culled if no repeat requests received in a time limit,
 Should scale with minimal impact to the Inverter, until the Arduino runs out of HTTP bandwidth.
 
+Concept is no understanding of the data by the Arduino - it's merely an HTTP over Wifi conduit for talking to the Inverter Modbus/RS485 interface in a scalable/efficient way.
+
 
 ## Webserver interface:
 
@@ -24,10 +26,10 @@ Real time gauge dashboard of Inverter information
 
 
 **/H** 
-Turn the onboard LED on
+Turn the onboard LED on (left over from initial Arduino sketch - left in for testing)
 
 **/L** 
-Turn the onboard LED off
+Turn the onboard LED off  (left over from initial Arduino sketch - left in for testing)
 
 **/R?refresh=<seconds>&address=<value>,<value>...**   
 Return the register addresse values as JSON JS array
@@ -40,9 +42,9 @@ e.g.
   http://solis.local/R/?addr=33057.2,33070
 
   Response 
-  JSON parsable JS object with address/data pairs, Null value if no available data from the server.
+  JSON parsable JS object with address/data pairs, Address will be absent if nothing has been cached from the inverter yet.
   
-	{ “33057": 0, "33070": null }
+	{ “33057": 0, "33070": 45 }
 
 
 **/S?address=<value>**
