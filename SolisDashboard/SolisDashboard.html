@@ -43,7 +43,7 @@
 
 body {
 	font-family: sans-serif;
-}
+}	
 
 #gauges {
 	width:90%;
@@ -68,9 +68,6 @@ body {
 
 		SVG shape definitions
 
-		Move the stroke with stroke-dasharray="n, 251"
-		Where n is proportional to 0-147
-
 		Dial geometry:
 				x,y				50, 50					pixels
 				
@@ -85,20 +82,22 @@ body {
 					mid point	147 /2 			= 73	pixels					
 					rotation	270 -210 /2		= 165	degrees
 					
+		Control
+				stroke-dasharray	- 0-146	move the stroke
+				stroke-dashoffset 	- -73	move the tick to 12 o'clock
+				transform			- 		mirror left/right
+
 	-->
-	<svg width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+	<svg width="0" height="0">
 		<defs>
-		
-			<!--
-				0 on the left, fills to the right
-			-->
 			<g id="gauge"
-			stroke-width="6"
-			fill="transparent"
-			transform="rotate(165, 50, 50)">
+				stroke-width="8"
+				fill="transparent"
+				transform="rotate(165, 50, 50)">
 				<circle class="track"
 						cx="50" cy="50" r="40"
 						stroke="whitesmoke"
+						stroke-dashoffset="0"
 						stroke-dasharray="146,251">
 				</circle>
 				<circle class="stroke"
@@ -108,35 +107,9 @@ body {
 						cx="50" cy="50" r="40"
 						stroke="black"
 						stroke-width="8"
-						stroke-dasharray=".25, 251">
+						stroke-dasharray=".5, 251">
 				</circle>
-			</g>
-			
-			<!--
-				0 in the middle, -ve left, +ve right
-			-->
-			<g id="gaugeMid"
-			stroke-width="6"
-			fill="transparent"
-			transform="rotate(165, 50, 50)">
-					<circle class="track"
-							cx="50" cy="50" r="40"
-							stroke="whitesmoke"
-							stroke-dasharray="146,251">
-					</circle>
-					<circle class="stroke"
-							cx="50" cy="50" r="40"
-							stroke-dashoffset="-73">
-					</circle>				
-					<circle class="tick"
-							cx="50" cy="50" r="40"
-							stroke="black"
-							stroke-width="8"
-							stroke-dasharray=".25, 251"
-							stroke-dashoffset="-73">
-					</circle>
-			</g>
-			
+			</g>	
 		</defs>
 	</svg>
 
@@ -150,14 +123,16 @@ body {
 
 			<div id="Solar">
 				Solar
-				<svg viewbox="0 0 100 65" xmlns="http://www.w3.org/2000/svg">
+				<svg viewbox="0 0 100 65">
 					<use id="solarG" href="#gauge" 
 						stroke="gold"
-						stroke-dasharray="0, 251"
-						transform="">
+						stroke-dasharray="0, 251">
 					</use>
 					<text id="solarGT"
 						x="50" y="50" 
+						font-size="100%"
+						font-family="sans-serif"
+						font-weight="normal"
 						fill="darkgrey"
 						text-anchor="middle" 
 						alignment-baseline="middle"
@@ -168,14 +143,18 @@ body {
 
 			<div>
 				Battery
-				<svg viewbox="0 0 100 65" xmlns="http://www.w3.org/2000/svg">
-					<use id="batteryG" href="#gaugeMid" 
+				<svg viewbox="0 0 100 65">
+					<use id="batteryG" href="#gauge" 
 						stroke="cornflowerblue"
+						stroke-dashoffset="-73"
 						stroke-dasharray="0, 251"
 						transform="">
 					</use>
 					<text id="batteryGT"
 						x="50" y="50" 
+						font-size="100%"
+						font-family="sans-serif"
+						font-weight="normal"
 						fill="darkgrey"
 						text-anchor="middle" 
 						alignment-baseline="middle"
@@ -186,14 +165,18 @@ body {
 			
 			<div>
 				Grid
-				<svg viewbox="0 0 100 65" xmlns="http://www.w3.org/2000/svg">
-					<use id="gridG" href="#gaugeMid"  
+				<svg viewbox="0 0 100 65">
+					<use id="gridG" href="#gauge"  
 						stroke="cornflowerblue"
+						stroke-dashoffset="-73"
 						stroke-dasharray="0, 251"
 						transform="">
 					</use>
 					<text id="gridGT"
 						x="50" y="50" 
+						font-size="100%"
+						font-family="sans-serif"
+						font-weight="normal"
 						fill="darkgrey"
 						text-anchor="middle" 
 						alignment-baseline="middle"
@@ -206,14 +189,16 @@ body {
 			</div>
 			
 			<div>
-				<svg viewbox="0 0 100 65" xmlns="http://www.w3.org/2000/svg">
+				<svg viewbox="0 0 100 65">
 					<use id="batterySOCG" href="#gauge"  
 						stroke="darkseagreen"
-						stroke-dasharray="0, 251"
-						transform="">
+						stroke-dasharray="0, 251">
 					</use>
 					<text id="batterySOCGT" 
 						x="50" y="50" 
+						font-size="100%"
+						font-family="sans-serif"
+						font-weight="normal"
 						fill="darkgrey"
 						text-anchor="middle" 
 						alignment-baseline="middle"
@@ -251,11 +236,15 @@ body {
 		//	Parse the inverter URL parameter for callbacks
 		//	When served from the arduino the live ip address replaces the hostname
 		//
+		//	Arduino searches for <script> then ** etc then "..."
+		//	Whatever is between the quotes is replaced with the actual IP address
+		//
 		function inverterURL() {
 			const queryString = window.location.search;
 			const urlParams = new URLSearchParams(queryString);
 			let inverterURL = urlParams.get('inverter')
 		
+			//	*** LIVE IP ADDRESS ***
 			if(inverterURL == null) inverterURL = "solis.local";
 		
 			console.log(inverterURL);
@@ -293,6 +282,9 @@ body {
 		//	If the server update is old - display
 		//	Else update from the most recent server response
 		//	
+		//	?? consider large gaps between callbacks...??
+		//	Gauges seem to keep moving towards infinity?
+		//
 		let lastCall = Date.now();
 		let dispJson = {};
 		function updateDashboard() {
@@ -300,9 +292,9 @@ body {
 			let freq = thisCall-lastCall || 16;
 			lastCall = thisCall;
 								
-			if(Date.now() - newTime > 5000) {				//	Old data? - warn and exit
+			if(Date.now() - newTime > 5000) {				// Old data? - warn and exit
 				document.getElementById("time").innerHTML = "(Waiting for data)";
-				setTimeout(updateDashboard, freq, freq);
+				setTimeout(updateDashboard, 2000);			// Wait a couple of seconds
 				return;
 			}
 
@@ -319,10 +311,10 @@ body {
 			//	Update the gauges
 			//
 			let d = 2;
-			setValue("solarG", 0, 4000, dispJson[33057], (dispJson[33057]/1000).toFixed(d) +"kW");			
-			setValue("batteryG", -3500, 3500, dispJson[33149], (dispJson[33149]/1000).toFixed(d) +"kW");
-			setValue("batterySOCG", 0, 100, dispJson[33139], dispJson[33139].toFixed(0) +"%");
-			setValue("gridG", -10000, 3500, dispJson[33130], (dispJson[33130]/1000).toFixed(d) +"kW");
+			setValue("solarG", 0, 4000, dispJson[33057], (dispJson[33057]/1000).toFixed(d) +" kW");			
+			setValue("batteryG", -3500, 3500, dispJson[33149], (dispJson[33149]/1000).toFixed(d) +" kW");
+			setValue("batterySOCG", 0, 100, dispJson[33139], (dispJson[33139]*1).toFixed(0) + "%");
+			setValue("gridG", -10000, 4000, dispJson[33130], (dispJson[33130]/1000).toFixed(d) +" kW");
 			
 			document.getElementById("temp").innerHTML = (newJson[33093]/10).toFixed(1);
 
@@ -332,7 +324,6 @@ body {
 			//	Callback via browser animation API
 			//
 			requestAnimationFrame(updateDashboard)
-//			setTimeout(updateDashboard, freq, freq);
 		}
 
 		
