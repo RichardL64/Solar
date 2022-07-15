@@ -1,4 +1,4 @@
-# Solar
+# Solar - Solis Inverter real time Dashboard
 Solis inverter / Pylontech battery arduino integration for remote panel etc without a dependency on third party cloud services.
 The inverter and batteries expose RS485 integration potential.
 
