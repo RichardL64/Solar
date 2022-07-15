@@ -145,7 +145,7 @@ void setupWiFi() {
   Serial.println("WiFi begin");                     // Bring WiFi up
   while(WiFi.status() != WL_CONNECTED) {
     WiFi.begin(SECRET_SSID, SECRET_PASS);
-    delay(5000);
+    delay(4000);
   }
   
   Serial.println("mDNS begin");                     // Advertise as HOSTNAME

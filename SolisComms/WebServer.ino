@@ -80,20 +80,21 @@ void parseLine(WiFiClient client, const String &line) {
   }
 
   //  The dashboard HTML is modified to insert the actual server IP address for callbacks.
-  //  We search for "<script>" and then "solis.local" - the latter is replaced with the current IP
+  //  We search for "<script>" and then "*** LIVE IP ADDRESS ***" then " to find the hostname
   //  The HTML is read only so replacement is done dnymaically on writing
   //
   if(line.startsWith("GET /dashboard")
     ||line.startsWith("GET / ")) {                                // /dashboard?url=<value>
     httpHeader(client);
 
-    char *script = strstr(dashboardHtml, "<script>");             // Script part of the HTML
-    char *url = strstr(script, HOSTNAME);                         // URL to replace
+    char *url = strstr(dashboardHtml, "<script>");                // Script part of the HTML
+    url = strstr(url, "*** LIVE IP ADDRESS ***");
+    url = strstr(url, "\"") +1;                                   // leading "
     char *quote = strstr(url, "\"");                              // following "
 
-    httpPrint(client, dashboardHtml, url - dashboardHtml);       // Print until the URL
-    client.print(WiFi.localIP());                                // Insert the live IP address
-    httpPrint(client, quote);                                    // From the training quote to the end
+    httpPrint(client, dashboardHtml, url - dashboardHtml);        // Print until the URL
+    client.print(WiFi.localIP());                                 // Insert the live IP address
+    httpPrint(client, quote);                                     // From the training quote to the end
         
     httpFooter(client);
   }
