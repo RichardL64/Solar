@@ -27,8 +27,7 @@
   http://solis.local
 
   /dashboard                      Real time gauge dashboard of Inverter information
-  
-  /                               'Hello world' base page
+  /
 
   /H                              Turn the onboard LED on
   /L                              Turn the onboard LED off
@@ -179,7 +178,7 @@ void loop() {
 
   int address =  cacheAddress[index];
   if(address != 0
-    && (lastCollect + MODBUS_DELAY) < millis()) {           // if there is an address to collect & not too frequent
+    && (millis() - lastCollect > MODBUS_DELAY)) {           // if there is an address to collect & not too frequent
     lastCollect = millis();
 
     Serial.print(address);

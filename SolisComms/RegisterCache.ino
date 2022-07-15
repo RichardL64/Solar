@@ -107,7 +107,7 @@ void stopAll() {
 //  Implies it has not been accessed in CACHE_OLD millis
 //
 void cacheAgeCheck(int i) {
-  if(cacheAge[i] + CACHE_OLD > millis()) return;    // still inside the age limit
+  if(millis() - cacheAge[i] < CACHE_OLD) return;    // still inside the age limit
 
   cacheDelete(i);                                   // old entry - remove it
 }

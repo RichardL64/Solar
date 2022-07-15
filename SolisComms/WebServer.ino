@@ -98,13 +98,9 @@ void parseLine(WiFiClient client, const String &line) {
     httpFooter(client);
   }
 
-  if(line.startsWith("GET /gauge.js")) {
-    httpHeader(client);
-    httpPrint(client, gaugeHtml);
-    client.println("// EOF");
-    httpFooter(client);    
-  }
-  
+
+  //  Unfinished - load/store password in local flash
+  //
   if(line.startsWith("GET /AP")) {            // Access point config            /AP?SSID=<value>&PASSWORD=<value>
     int pos = 0;    
     String ssid, password;
