@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-</head>
+  <meta name="author" content="Richard Lincoln July 2022">
+  <meta name="description" content="https://github.com/RichardL64/Solar">
+  <title>Solis Dashboard</title>
 
 <!--
 
-	Proof concept dashboard to present Arduino gathered live SOLIS inverter data
+	Proof of concept dashboard to present Arduino gathered live SOLIS inverter data
 	
 	V2.1
 	Circle based gauge construction vs. previous arcs
@@ -33,48 +33,53 @@
 -->
 
 
+	<!--
+	
+		CSS
+		
+	-->
+	<style>
+
+	body {
+		font-family: sans-serif;
+	}	
+
+	.border {
+		border:1px solid black;
+	}
+
+	.bottom-left {
+		display: flex;
+		flex-direction: column;
+		align-self: flex-end;
+	}
+
+	.bottom-right {
+		display: flex;
+		flex-direction: row-reverse;	
+		align-self: flex-end;
+	}
+
+	#gauges {
+		width:90%;
+		margin:auto; 
+		display:grid;
+		grid-template-columns: 1fr 1fr 1fr;
+		padding: 10px;	
+	}
+
+
+	</style>
+
+</head>
+
+
 
 <!--
+
+	Body
 	
-	CSS
-		
 -->
-<style>
-
-body {
-	font-family: sans-serif;
-}	
-
-.border {
-	border:1px solid black;
-}
-
-.bottom-left {
-	display: flex;
-	flex-direction: column;
-	align-self: flex-end;
-}
-
-.bottom-right {
-	display: flex;
-	flex-direction: row-reverse;	
-	align-self: flex-end;
-}
-
-#gauges {
-	width:90%;
-	margin:auto; 
-	display:grid;
-	grid-template-columns: 1fr 1fr 1fr;
-	padding: 10px;	
-}
-
-
-
-
-</style>
-
-
 <body>
 
 	<!--
@@ -134,7 +139,7 @@ body {
 	-->
 	<div id="gauges">
 
-			<div id="Solar">
+			<div>
 				Solar
 				<svg viewbox="0 0 100 65">
 					<use id="solarG" href="#gauge" 
@@ -199,7 +204,7 @@ body {
 			</div>
 
 			<div class="bottom-left">
-				<span>Inverter temp. <label id="temp"></label>&#176C</span>
+				<span>Inverter temp. <label id="temp"></label>&#8451;</span>
 			</div>
 			
 			<div>
@@ -224,11 +229,6 @@ body {
 			<div class="bottom-right">
 				<span><label id="time"></label></span>
 			</div>
-
-
-	</div>
-
-
 
 	</div>
 
