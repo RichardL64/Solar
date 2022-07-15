@@ -24,7 +24,10 @@ void serviceWiFi() {
   WiFiClient client = server.available();   // listen for incoming clients
   if (!client) return;
 
-  Serial.println("new client");
+  Serial.print("new client ");
+  Serial.print(client.remoteIP());
+  Serial.print(":");
+  Serial.println(client.remotePort());
   
   String line = nextLine(client);
   parseLine(client, line);                // drive from the first line of each request
