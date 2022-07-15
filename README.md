@@ -17,7 +17,6 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 ## Known issues:
 
  - Shows NaN until the server starts sending real data
- - mDNS doesn't work after long periods of no client access (overnight), have to revert to IP address for first access
 
 ## Intention:
 
