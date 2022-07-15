@@ -87,7 +87,7 @@
 #define SERVICENAME "solis._http"
 
 //  Data collection - ms between register requests
-#define MODBUS_DELAY 1
+#define MODBUS_DELAY 10
 
 /*
  * Global objects
