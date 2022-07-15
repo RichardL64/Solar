@@ -65,19 +65,32 @@ body {
   font-family: sans-serif;
 } 
 
+.border {
+  border:1px solid black;
+}
+
+.bottom-left {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-end;
+}
+
+.bottom-right {
+  display: flex;
+  flex-direction: row-reverse;  
+  align-self: flex-end;
+}
+
 #gauges {
   width:90%;
   margin:auto; 
   display:grid;
   grid-template-columns: 1fr 1fr 1fr;
-  padding: 10px;
-  
-/*  border:1px solid black;   */
+  padding: 10px;  
 }
 
-#time {
-  float:right;
-} 
+
+
 
 </style>
 
@@ -126,7 +139,7 @@ body {
         <circle class="tick"
             cx="50" cy="50" r="40"
             stroke="black"
-            stroke-width="8"
+            stroke-width="10"
             stroke-dasharray=".5, 251">
         </circle>
       </g>  
@@ -205,7 +218,8 @@ body {
         </svg>
       </div>
 
-      <div>
+      <div class="bottom-left">
+        <span>Inverter temp. <label id="temp"></label>&#176C</span>
       </div>
       
       <div>
@@ -227,17 +241,10 @@ body {
         </svg>
       </div>
 
-      <div>
+      <div class="bottom-right">
+        <span><label id="time"></label></span>
       </div>
-      
-      <div>
-        Inverter temp. <label id="temp"></label>&#176C
-      </div>
-      <div>
-      </div>
-      <div>
-        <label id="time"></label>
-      </div>
+
 
   </div>
 

@@ -204,7 +204,7 @@ void loop() {
   index++;                                                  // Next cache entry for next loop
   index %= CACHE_SIZE;                                      // Limit 0 ... CACHE_SIZE -1  
 
-  delay(1);
+  delay(10);
 }
 
 
