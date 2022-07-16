@@ -17,6 +17,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 ## Known issues:
 
  - Shows NaN until the server starts sending real data
+ - Hidden displays will move the gauges off scale until brought into focus (something to do with the Animate callback)
 
 ## Intention:
 
