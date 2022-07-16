@@ -73,6 +73,7 @@ void parseLine(WiFiClient client, const String &line) {
     httpHeader(client);
     client.print("LED on");
     httpFooter(client);
+    return;
   }
 
   if(line.startsWith("GET /L")){              // LED off
@@ -80,6 +81,7 @@ void parseLine(WiFiClient client, const String &line) {
     httpHeader(client);
     client.print("LED off");
     httpFooter(client);
+    return;
   }
 
   //  The dashboard HTML is modified to insert the actual server IP address for callbacks.
@@ -100,6 +102,7 @@ void parseLine(WiFiClient client, const String &line) {
     httpPrint(client, quote);                                     // From the training quote to the end
         
     httpFooter(client);
+    return;
   }
 
 
@@ -120,6 +123,7 @@ void parseLine(WiFiClient client, const String &line) {
     httpHeader(client);
     client.println("SSID, Password set - reset to retry Wifi connection");
     httpFooter(client);
+    return;
   }
 
   if(line.startsWith("GET /R")) {            // Return register values           /R?refresh=<seconds>&address=<address>,<address>...
@@ -139,6 +143,7 @@ void parseLine(WiFiClient client, const String &line) {
       client.print(parseAddressValues(line, pos));
     }
     httpFooter(client);
+    return;
   }
 
   if(line.startsWith("GET /S")) {            // Stop collecting register values  /S?address=<address>
@@ -153,6 +158,7 @@ void parseLine(WiFiClient client, const String &line) {
     }
     httpHeader(client);
     httpFooter(client);
+    return;
   }
 
   if(line.startsWith("GET /C")) {            // Readout the cache
@@ -174,8 +180,14 @@ void parseLine(WiFiClient client, const String &line) {
       client.print("<br>");
     }
     httpFooter(client);
+    return;
   }
 
+  //  Fallthrough - send a confirmation header/footer anyway so the caller knows I'm here
+  //
+  httpHeader(client);
+  httpFooter(client);
+  
 }
 
 //  Send the standard HTTP header
@@ -198,8 +210,8 @@ void httpFooter(WiFiClient client) {
     client.println();
 }
 
-//  WiFi.Client write/print over around 4k trashes data
 //  Breakup large files into <4k chunks for output
+//  WiFi.Client write/print over around 4k trashes data
 //  If the length is passed its used, otherwise writes to end of string \0
 //
 void httpPrint(WiFiClient client, const char *data, int length) {
