@@ -1,7 +1,10 @@
 # Dashboard
 
 The standa alone dashboard HTML/JS
-Uses a modified SVG Gauges library based on Naikus': https://github.com/naikus/svg-gauge
+
+Uses and develops gauge drawing ideas from (Thank you):
+		https://www.fullstacklabs.co/blog/creating-an-svg-gauge-component-from-scratch
+		https://github.com/naikus/svg-gauge
 
 ## Local/testing 
 Can be run locally with a ?inverter=<ip> suffix to explicitly tell it where the server is.
