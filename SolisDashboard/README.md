@@ -3,7 +3,9 @@
 The standa alone dashboard HTML/JS
 
 Uses and develops gauge drawing ideas from (Thank you):
+
 		https://www.fullstacklabs.co/blog/creating-an-svg-gauge-component-from-scratch
+		
 		https://github.com/naikus/svg-gauge
 
 ## Local/testing 
