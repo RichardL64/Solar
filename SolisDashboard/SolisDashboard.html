@@ -101,10 +101,10 @@
 					mid point		147 /2 				= 73	pixels
 					rotation		270 -210 /2		= 165	degrees
 
-		Control
-				stroke-dasharray	0-146	move the stroke
-				stroke-dashoffset	-73		move the tick to 12 o'clock
-				transform								mirror left/right
+		Dial control
+				move the stroke				stroke-dasharray	0-146
+				move the tick to top	stroke-dashoffset	-73
+				mirror left/right			transform translate & scale
 
 	-->
 	<svg width="0" height="0">
@@ -241,6 +241,15 @@
 	-->
 	<script>
 
+		//	Inverter register addresses
+		//
+		const solarR 		= 33057;
+		const battCDR		= 33135;
+		const batteryR	= 33149;
+		const gridR			= 33130;
+		const battSOCR	= 33139;
+		const tempR			= 33093;
+
 		//	Parse the inverter URL parameter for callbacks
 		//	When served from the arduino the live ip address replaces the hostname
 		//
@@ -259,87 +268,101 @@
 			return inverterURL;
 		}
 
-		//	Call the server for a data update
-		//	Calls itself at the passed millis for updates
+		//	Call the server for a data update, calls itself in freq ms
+		//	When I get new data kick off the dashboard, assuming its stopped animating the previous update
+		//	Variable length async response depending how long the fetch takes
 		//
-		let newTime =0;
-		let newJson = {};
+		let newJsonTime = new Date()											// time data returned
+		let newJson = {};																	// last data returned
+
 		function callServer(freq) {
-
 			fetch('http://' + URL + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
-			.then(res => res.json())
-			.then(json => {
+				.then(res => res.json())
+				.then(json => {
+					if(json[battCDR] == 1) json[batteryR] *= -1	// Make battery signed - 0=chg, 1=dischg
+					delete json[battCDR]
 
-				newJson = json;
-				if(json[33135] == 1) json[33149] *= -1			// Make battery signed - 0=chg, 1=dischg
-				newTime = Date.now();
-				console.log(newJson);
-
-				}
-			)
-
-			.catch(err => console.error(err))
-			.finally(() => {
-				setTimeout(callServer, freq, freq);					// Auto refresh
-				}
-			);
+					newJson = json;															// newJson is the new target for display
+					newJsonTime = Date.now();
+					console.log(newJson);
+					})
+				.catch(err => console.error(err))
+				.finally(() => {
+						requestAnimationFrame(updateDashboard);		// Update the dashboard with new values
+						setTimeout(callServer, freq, freq);				// call myself
+					});
 		}
 
 		//	Update the dashboard
+		//	Once no change is detected, waits on the server response before starting again
 		//	Called by the browser animation API so no fixed frequency
 		//
-		//	If the server update is old - display
-		//	Else update from the most recent server response
-		//
-		//	?? consider large gaps between callbacks...??
-		//	Gauges seem to keep moving towards infinity?
-		//
-		let lastCall = Date.now();
-		let dispJson = {};
-		function updateDashboard() {
-			let thisCall = Date.now();								// work out our calling frequency
-			let freq = thisCall-lastCall || 16;
-			lastCall = thisCall;
+		let dispJson = {};																			// the currently displayed json data
 
-			if(Date.now() - newTime > 5000) {					// Old data? - warn and exit
-				document.getElementById("time").innerHTML = "(Waiting for data)";
-				setTimeout(updateDashboard, 2000);			// Wait a couple of seconds
+		function updateDashboard() {
+			console.log("frames");
+
+			//	Move dispJson towards newJson incrementally
+			//	Keep a record of anything changing
+			//
+			let changes = false																		// posit nothing will change
+			for(const reg in newJson) {
+				if(dispJson[reg] === undefined) {										// first time through - copy the latest data
+					dispJson[reg] = newJson[reg];
+					changes = true;
+					continue;
+				}
+
+				let delta = newJson[reg] - dispJson[reg];
+				if(Math.abs(delta) <= 1 ) {													// delta is close enough - copy the latest data
+					dispJson[reg] = newJson[reg];
+					continue;
+				}
+
+				let change = Math.max(Math.abs(delta)/60, 1)
+											* Math.sign(delta);										// proportional & minimum move per frame, +ve or -ve
+				dispJson[reg] += change;
+				changes = true;																			// at least one value moved!
+			}
+
+			//	Update the gauges from newJson
+			//
+			let d = 2;
+			setValue("solarG", 			0, 			4000,	dispJson[solarR],		(dispJson[solarR]/1000).toFixed(d) +" kW");
+			setValue("batteryG",		-3600, 	3600,	dispJson[batteryR], (dispJson[batteryR]/1000).toFixed(d) +" kW");
+			setValue("gridG", 			-10000,	4000,	dispJson[gridR],		(dispJson[gridR]/1000).toFixed(d) +" kW");
+			setValue("batterySOCG",	0, 			100, 	dispJson[battSOCR], (dispJson[battSOCR]*1).toFixed(0) + "%");
+			document.getElementById("temp").innerHTML = (newJson[tempR]/10).toFixed(1);
+
+			//	If there are changes - request more animation frames = ~60fps or more
+			//
+			if(changes)
+				requestAnimationFrame(updateDashboard);
+		}
+
+		//	Update the time every second
+		//	Warn if the data is getting old
+		//
+		function updateTime() {
+			let now = new Date();
+			let dataAge = now - newJsonTime;
+
+			if(dataAge < 5000) {
+				document.getElementById("time").innerHTML = "Updated at " + now.toLocaleTimeString();
 				return;
 			}
 
-			//	Move dispJson towards newJson incrementally
-			//	Naturally slows/inverse square as it gets close
-			//
-			for(const reg in newJson) {
-				if(dispJson[reg] === undefined) dispJson[reg] = 0;
-				let delta = (newJson[reg] - dispJson[reg]) || 0;
-				let change = delta *freq /2000					// get there in n millis
-				dispJson[reg] += change;
-			}
-
-			//	Update the gauges
-			//
-			let d = 2;
-			setValue("solarG", 			0, 			4000,	dispJson[33057], (dispJson[33057]/1000).toFixed(d) +" kW");
-			setValue("batteryG",		-3500, 	3500,	dispJson[33149], (dispJson[33149]/1000).toFixed(d) +" kW");
-			setValue("gridG", 			-10000,	4000,	dispJson[33130], (dispJson[33130]/1000).toFixed(d) +" kW");
-			setValue("batterySOCG",	0, 			100, 	dispJson[33139], (dispJson[33139]*1).toFixed(0) + "%");
-
-			document.getElementById("temp").innerHTML = (newJson[33093]/10).toFixed(1);
-
-			let now = new Date();
-			document.getElementById("time").innerHTML = "Updated at " + now.toLocaleTimeString();
-
-			//	Callback via browser animation API
-			//
-			requestAnimationFrame(updateDashboard)
+			document.getElementById("time").innerHTML = "(Waiting " + (dataAge /1000).toFixed(0) + " secs for data)";
 		}
+
 
 		//	Startup
 		//
-		const URL = inverterURL()					// URL from ?inverter=
-		callServer(2000);									// Data updates
-		updateDashboard();								// Screen updates driven by browser animation
+		const URL = inverterURL()														// URL from ?inverter=
+		requestAnimationFrame(updateDashboard)
+		callServer(2000);																		// continuous periodic data retrieval
+		setInterval(updateTime, 1000);											// regular timestamp updates
+
 
 		//	Set the value and value text for the passed gauge ID
 		//	Updates id and id+"T" elements
@@ -349,10 +372,14 @@
 		//
 		function setValue(id, min, max, val, valDisp) {
 
+			if (isNaN(val)) return;											// no value - ignore
+
 			//	Value text
+			//
 			document.getElementById(id + "T").textContent = valDisp;
 
 			//	Min is +ve, draw from the left end
+			//
 			if(min >= 0) {															// From left hand end
 				let pn = toPercent(min, max, val);				// %
 				let v = 1.46 * pn;												// * 1% of dial
@@ -361,6 +388,7 @@
 			}
 
 			//	Min is -ve, value is +ve draw from the middle right
+			//
 			if(val >= 0) {
 				let pn = toPercent(0, max, val);					// % 0...max
 				let v = 1.46 * pn /2;											// * 1% of half the dial
@@ -370,12 +398,14 @@
 			}
 
 			// Min is -ve, value is -ve, use -ve side scale and mirror the dial
+			//
 			let pn = toPercent(0, min,  val);						// % min...0
 			let v = 1.46 * pn /2;												// * 1% of half the dial
 			document.getElementById(id).setAttribute("stroke-dasharray", v + ", 251");
 			document.getElementById(id).setAttribute("transform", "translate(100,0) scale(-1,1)");
 
 		}
+
 
 		//	Return the value in the min-max range as percent 0-100
 		//
