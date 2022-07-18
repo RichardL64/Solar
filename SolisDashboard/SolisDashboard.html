@@ -272,24 +272,38 @@
 		//	When I get new data kick off the dashboard, assuming its stopped animating the previous update
 		//	Variable length async response depending how long the fetch takes
 		//
-		let newJsonTime = new Date()											// time data returned
-		let newJson = {};																	// last data returned
+		let newJsonTime = new Date()														// time data returned
+		let newJson = {};																				// last data returned
 
 		function callServer(freq) {
+
+			//	If the last dashboard frame was a while ago - its probably throttled by the browser
+			//	We're probably in the background
+			//	Stop doing the server round trip until the browser supports displaying them
+			//
+			if(new Date - lastFrameTime > 2000) {
+				console.log("no frames");
+				requestAnimationFrame(updateDashboard);							// keep asking for anim frames
+				serverTimeout = setTimeout(callServer, 1000, freq);	// keep checking more frequently, preserve the original freq
+				return;
+			}
+
+			//	Callback to the server for new data
+			//
 			fetch('http://' + URL + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
 				.then(res => res.json())
 				.then(json => {
-					if(json[battCDR] == 1) json[batteryR] *= -1	// Make battery signed - 0=chg, 1=dischg
+					if(json[battCDR] == 1) json[batteryR] *= -1				// Make battery signed - 0=chg, 1=dischg
 					delete json[battCDR]
 
-					newJson = json;															// newJson is the new target for display
+					newJson = json;																		// newJson is the new target for display
 					newJsonTime = Date.now();
 					console.log(newJson);
 					})
 				.catch(err => console.error(err))
 				.finally(() => {
-						requestAnimationFrame(updateDashboard);		// Update the dashboard with new values
-						setTimeout(callServer, freq, freq);				// call myself
+						requestAnimationFrame(updateDashboard);					// Update the dashboard with new values
+						setTimeout(callServer, freq, freq);							// call myself
 					});
 		}
 
@@ -297,10 +311,13 @@
 		//	Once no change is detected, waits on the server response before starting again
 		//	Called by the browser animation API so no fixed frequency
 		//
+		let lastFrameTime = new Date();
 		let dispJson = {};																			// the currently displayed json data
 
 		function updateDashboard() {
 			console.log("frames");
+
+			lastFrameTime = new Date;															// detect browser slowing screen updates
 
 			//	Move dispJson towards newJson incrementally
 			//	Keep a record of anything changing
@@ -352,14 +369,13 @@
 				return;
 			}
 
-			document.getElementById("time").innerHTML = "(Waiting " + (dataAge /1000).toFixed(0) + " secs for data)";
+			document.getElementById("time").innerHTML = "Updated " + (dataAge /1000).toFixed(0) + " secs ago";
 		}
 
 
 		//	Startup
 		//
 		const URL = inverterURL()														// URL from ?inverter=
-		requestAnimationFrame(updateDashboard)
 		callServer(2000);																		// continuous periodic data retrieval
 		setInterval(updateTime, 1000);											// regular timestamp updates
 
@@ -397,7 +413,7 @@
 				return;
 			}
 
-			// Min is -ve, value is -ve, use -ve side scale and mirror the dial
+			// Min is -ve, value is -ve, draw from the middle left and mirror the dial
 			//
 			let pn = toPercent(0, min,  val);						// % min...0
 			let v = 1.46 * pn /2;												// * 1% of half the dial
@@ -405,7 +421,6 @@
 			document.getElementById(id).setAttribute("transform", "translate(100,0) scale(-1,1)");
 
 		}
-
 
 		//	Return the value in the min-max range as percent 0-100
 		//
