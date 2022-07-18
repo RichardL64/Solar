@@ -13,11 +13,11 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
  - Basic HTML/JS Dashboard consumer showing real time/~2 second updates.
  - mDNS hostname to IP lookup
  - Basic wifi reconnection on loss logic
+ - Integration with browser animation callbacks to reduce load for background windows
 
 ## Known issues:
 
- - Shows NaN until the server starts sending real data
- - Hidden displays will move the gauges off scale until brought into focus (something to do with the Animate callback)
+ - mDNS seems to lockup sometimes esp. on mobile devices - there's prboably a loop/ungraceful disconnect handling somewhere in the webserver code.
 
 ## Intention:
 
