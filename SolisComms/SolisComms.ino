@@ -122,6 +122,7 @@ void setup() {
   randomSeed(analogRead(0));                        // Random numbers used in test data generation
 
   setupWiFi();                                      // Bring WiFi and mDNS up
+  digitalWrite(LED_BUILTIN, HIGH);                  // re lite the LED first time around
 
   Serial.println("Webserver begin");                // Bring Webserver up
   server.begin();                              
@@ -142,6 +143,8 @@ void setup() {
  */
 void setupWiFi() {
 
+  digitalWrite(LED_BUILTIN, HIGH);                  // LED lit during setup - should go out if sucessful
+
   WiFi.setHostname(HOSTNAME);
   
   Serial.println("WiFi begin");                     // Bring WiFi up
@@ -155,6 +158,8 @@ void setupWiFi() {
   mdns.addServiceRecord(SERVICENAME, 80, MDNSServiceTCP);
 
   printWifiStatus();
+
+  digitalWrite(LED_BUILTIN, LOW);
 }
  
 /*
