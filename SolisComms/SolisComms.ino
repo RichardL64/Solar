@@ -201,7 +201,9 @@ void loop() {
         Serial.println(data);
     }
   }
+ 
   if(address == 101) setCache(index, random(0, 1000));      // Random number test data on 101  
+  if(address == 102) setCache(index, millis());             // Incrementing millis test data on 102
   
   index++;                                                  // Next cache entry for next loop
   index %= CACHE_SIZE;                                      // Limit 0 ... CACHE_SIZE -1  
