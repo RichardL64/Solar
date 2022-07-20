@@ -70,13 +70,13 @@
   * 
   */
 #include <SPI.h>
-#include <WiFiNINA.h>         // (note _generic version locks up on closed connections)
+#include <WiFiNINA.h>                           // (note _generic version locks up on closed connections)
 #include <MDNS_Generic.h>
 #include <ArduinoModbus.h>
 
 #include "RegisterCache.h"
 #include "WebServer.h"
-#include "arduino_secrets.h"
+#include "arduino_secrets.h"                    // defines SECRET_SSID, SECRET_PASS
 
 //  Used in AP mode for setup
 #define AP_SSID "solis-setup"
@@ -94,7 +94,6 @@
  * 
  */
 //  WIFI server
-int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
 //  mDNS service broadcast
@@ -116,20 +115,20 @@ void setup() {
 
   String fv = WiFi.firmwareVersion();               // Wifi Firmware check
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.println("Please upgrade the firmware");
+    Serial.println(F("Please upgrade the firmware"));
   }
 
   randomSeed(analogRead(0));                        // Random numbers used in test data generation
 
   setupWiFi();                                      // Bring WiFi and mDNS up
-  digitalWrite(LED_BUILTIN, HIGH);                  // re lite the LED first time around
+  digitalWrite(LED_BUILTIN, HIGH);                  // LED lit during setup - should go out if sucessful
 
-  Serial.println("Webserver begin");                // Bring Webserver up
+  Serial.println(F("Webserver begin"));             // Bring Webserver up
   server.begin();                              
 
-  Serial.println("Modbus begin");                   // Bring Modbus up
+  Serial.println(F("Modbus begin"));                // Bring Modbus up
   if (!ModbusRTUClient.begin(9600)) {      
-    Serial.println("Modbus RTU Client start failed");
+    Serial.println(F("Modbus RTU Client start failed"));
     while (true);                                   // lockup
   }
 
@@ -147,13 +146,13 @@ void setupWiFi() {
 
   WiFi.setHostname(HOSTNAME);
   
-  Serial.println("WiFi begin");                     // Bring WiFi up
+  Serial.println(F("WiFi begin"));                  // Bring WiFi up
   while(WiFi.status() != WL_CONNECTED) {
-    WiFi.begin(SECRET_SSID, SECRET_PASS);
+    WiFi.begin(SECRET_SSID, SECRET_PASS);           // defined in Arduino_secrets.h
     delay(4000);
   }
   
-  Serial.println("mDNS begin");                     // Advertise as HOSTNAME
+  Serial.println(F("mDNS begin"));                  // Advertise as HOSTNAME
   mdns.begin(WiFi.localIP(), HOSTNAME);
   mdns.addServiceRecord(SERVICENAME, 80, MDNSServiceTCP);
 
@@ -194,7 +193,7 @@ void loop() {
     if(!ModbusRTUClient.requestFrom(1, INPUT_REGISTERS, address, size)) {
         setCache(index, 0, DATA_ERROR);
 
-        Serial.println(" = Data error");
+        Serial.println(F(" = Data error"));
 
     } else {                                                // else good data
         long data = 0;
@@ -202,9 +201,10 @@ void loop() {
         data |=  ModbusRTUClient.read();                    // Low 16 bits
         setCache(index, data);
 
-        Serial.print(" = ");
+        Serial.print(F(" = "));
         Serial.println(data);
     }
+
   }
  
   if(address == 101) setCache(index, random(0, 1000));      // Random number test data on 101  
@@ -220,23 +220,23 @@ void loop() {
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
+  Serial.print(F("SSID: "));
   Serial.println(WiFi.SSID());
 
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
+  Serial.print(F("IP Address: "));
   Serial.println(ip);
 
   // print the received signal strength:
   long rssi = WiFi.RSSI();
-  Serial.print("Signal strength (RSSI):");
+  Serial.print(F("Signal strength (RSSI):"));
   Serial.print(rssi);
-  Serial.println(" dBm");
+  Serial.println(F(" dBm"));
   // print where to go in a browser:
-  Serial.print("URL http://");
+  Serial.print(F("URL http://"));
   Serial.print(HOSTNAME);
-  Serial.println(".local");
+  Serial.println(F(".local"));
 }
 
 //  Example Arduino reset code

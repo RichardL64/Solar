@@ -13,7 +13,7 @@
 */
 
 #define HTTP_PRINT_CHUNK 1024
-
+#define CHAR_WAIT 100
 
 //  Check for a wifi client and service inbound HTTP requests
 //  Generally reads the first header line to create a response
@@ -24,62 +24,85 @@ void serviceWiFi() {
   WiFiClient client = server.available();   // listen for incoming clients
   if (!client) return;
 
-  Serial.print("new client ");
+  Serial.print(F("new client "));
   Serial.print(client.remoteIP());
   Serial.print(":");
   Serial.println(client.remotePort());
+
+  char line1[512];                                // line buffers
+  char lineN[512];
+   
+  nextLine(client, line1);                        // keep the first line "... GET etc...."
+  Serial.print(" ");
+  Serial.println(line1);
   
-  String line = nextLine(client);
-  parseLine(client, line);                // drive from the first line of each request
-  client.stop();                          // disconnect
+  nextLine(client, lineN);
+  while(lineN[0] != '\0') {                        // read the whole request - useful for debugging
+    Serial.print(" ");
+    Serial.println(lineN);
+    nextLine(client, lineN);
+  }
+
+  parseLine(client, line1);                       // functionality all from line1 
+  client.stop();                                  // disconnect
   
-  Serial.println("client disconnected");
+  Serial.println(F("client disconnected"));
 }
 
 //  Get the next line from the client
-//  Until end of line or out of characters or the client disconnects
+//  No checks for available characters, just try reading them and check for -1
 //
-String nextLine(WiFiClient client) {
-    String line = "";
-    line.reserve(512);
+void nextLine(WiFiClient client, char *line) {
+    line[0] = '\0';
+    int pos = 0;
 
     while (client.connected()) {            // loop while the client is connected
 
-      if (client.available()) {             // if there are bytes to read from the client
-        char c = client.read();             // Process one character at a time
-        switch (c) {
-        case '\n':                          // new line
-        case '\r':                          // carriage return
-          return line;
+      unsigned long cWait = millis();       // character timer
+      char c = client.read();               // try and get a character
+      switch (c) {
+        case 0xff:                          // -1 = no characters - ignore pending the timeout
+          if(millis() - cWait > CHAR_WAIT) 
+            return;                         // ==> took too long
+          delay(1);
           break;
-        default:                            // add chars to the line
-          line += c;
+          
+        case '\r':                          // carriage return - ignored
           break;
-        }
+          
+        case '\n':                          // new line - end of record 'cr, lf' pair
+          return;                           // ==> done
+          break;
+          
+        default:                            // otherwise add the char to the line
+          line[pos++] = c;
+          line[pos] = '\0';
+          break;
       }
-    }
 
-    return line;
+    }    
 }
 
 //  Parse an inbound line from the client
 //  Creates any activity and HTML response required
 //
-void parseLine(WiFiClient client, const String &line) {
-  Serial.println(line);
-
-  if(line.startsWith("GET /H")){              // LED on
+void parseLine(WiFiClient client, char *line) {
+  char name[50], value[50], json[512];
+      
+  //  Historic entry points - useful for basic testing
+  //
+  if(strstr(line, "GET /H") != 0){              // LED on
     digitalWrite(LED_BUILTIN, HIGH);
     httpHeader(client);
-    client.print("LED on");
+    client.print(F("LED on"));
     httpFooter(client);
     return;
   }
 
-  if(line.startsWith("GET /L")){              // LED off
+  if(strstr(line,"GET /L") != 0){             // LED off
     digitalWrite(LED_BUILTIN, LOW);
     httpHeader(client);
-    client.print("LED off");
+    client.print(F("LED off"));
     httpFooter(client);
     return;
   }
@@ -88,8 +111,8 @@ void parseLine(WiFiClient client, const String &line) {
   //  We search for "<script>" and then "*** LIVE IP ADDRESS ***" then " to find the hostname
   //  The HTML is read only so replacement is done dnymaically on writing
   //
-  if(line.startsWith("GET /dashboard")
-    ||line.startsWith("GET / ")) {                                // /dashboard?url=<value>
+  if(strstr(line, "GET / ") != 0
+    || strstr(line, "GET /dashboard") != 0) {                     // /dashboard?url=<value>
     httpHeader(client);
 
     char *url = strstr(dashboardHtml, "<script>");                // Script part of the HTML
@@ -105,7 +128,7 @@ void parseLine(WiFiClient client, const String &line) {
     return;
   }
 
-
+/*
   //  Unfinished - load/store password in local flash
   //
   if(line.startsWith("GET /AP")) {            // Access point config            /AP?SSID=<value>&PASSWORD=<value>
@@ -121,39 +144,40 @@ void parseLine(WiFiClient client, const String &line) {
 
     // save ssid/password to flash here
     httpHeader(client);
-    client.println("SSID, Password set - reset to retry Wifi connection");
+    client.println(F("SSID, Password set - reset to retry Wifi connection"));
     httpFooter(client);
     return;
   }
+*/
 
-  if(line.startsWith("GET /R")) {            // Return register values           /R?refresh=<seconds>&address=<address>,<address>...
-    int pos = 0;
-    String name;
+  if(strstr(line, "GET /R") != 0) {           // Return register values           /R?refresh=<seconds>&address=<address>,<address>...
+    char *pos = nextName(line, name);
     
-    name = nextName(line, pos);
-    
-    int refresh = 0;                         // ?refresh=n  parameter must come first for the header
-    if(name == "refresh") {
-      refresh = nextValue(line, pos).toInt();
-      name = nextName(line, pos);
+    int refresh = 0;                          // ?refresh=n  parameter must come first for the header
+    if(strcmp(name, "refresh") == 0) {
+      pos = nextValue(pos, value);      
+      refresh = atoi(value);
+      pos = nextName(pos, name);
     }
     httpHeader(client, refresh);
-    
-    if(name == "address") {                  // ?address=<value>,<value>...
-      client.print(parseAddressValues(line, pos));
+        
+    if(strcmp(name, "address") == 0) {        // ?address=<value>,<value>...
+      parseAddressValues(pos, json);
+      client.print(json);
     }
     httpFooter(client);
     return;
   }
 
-  if(line.startsWith("GET /S")) {            // Stop collecting register values  /S?address=<address>
-    int pos = 0;
-    String name = nextName(line, pos);
-    if(name.equalsIgnoreCase("all")) {                         // /S?all
+  if(strstr(line, "GET /S") != 0) {           // Stop collecting register values  /S?address=<address>
+    char *pos = nextName(line, name);
+    
+    if(strcmp(name, "all") == 0) {                        // /S?all
       stopAll();
 
-    } else if(name.equalsIgnoreCase("address")) {              // /S?address=<address>
-      stopRegister(nextValue(line, pos).toInt());
+    } else if(strcmp(name, "address") == 0) {             // /S?address=<address>
+      pos = nextValue(pos, value);
+      stopRegister(atoi(value));
 
     }
     httpHeader(client);
@@ -161,9 +185,9 @@ void parseLine(WiFiClient client, const String &line) {
     return;
   }
 
-  if(line.startsWith("GET /C")) {            // Readout the cache
+  if(strstr(line, "GET /C") != 0) {          // Readout the cache
     httpHeader(client);
-    client.print("Register cache<br>");
+    client.print(F("Register cache<br>"));
     for(int i = 0; i<CACHE_SIZE; i++) {
       client.print("[");
       client.print(i);
@@ -224,84 +248,73 @@ void httpPrint(WiFiClient client, const char *data, int length) {
     client.write(p, length);                  // partial left over
 }
 
-
-//  Return the first index of any of the search string chars in line string after start
+//  Next name "..... ?<name>=...&<name> ...."
+//  name is updated with the name
+//  returns a pointer to the next char
 //
-int firstOf(const String &line, const char *search, int start) {
-  int len = line.length();
-  for(int i = start; i < len; i++) {        // each char of the line
-      const char *c = search;
-      while(*c != '\0') {                   // vs. each char of the search
-          if(line[i] == *c){
-              return i;                     // found one - stop now
-          }
-          c++;
-      }
-  }
-  return -1;
+char *nextName(char *line, char *name) {
+  return nextStr(line, "?&", "= ", name);    
 }
 
-//  Starting at pos, find the next parameter name, following ? or &
-//  Return the parameter name and increment pos to the first character after it
+
+//  Next value "..... =<value>,<value>&<parm>=... "
+//  value is updated with the value
+//  returns a pointer to the next char
 //
-//  line = "..... ?<name>=...&<name> ...."
-//
-String nextName(const String &line, int &pos) {
-  int start = firstOf(line, "?&", pos);       // next ? or &
-  int end = firstOf(line, "= ", start +1);    // and next = or space after it
+char *nextValue(char *line, char *value) {
+  return nextStr(line, "=,", ",&? ", value);  
+}
+
+//  Find the next string delimited by d1, d2 in line
+//  Value is the found value
+//  Returns a pointer to the char after the value
+//  
+char *nextStr(char *line, const char *d1, const char *d2, char *value) {
+  value[0] = '\0';
+  char *start = strpbrk(line, d1);
+  char *end = strpbrk(start +1, d2);
+
+  if(!start || !end) return line;             // no delimiter pair
+
+  int l = end - start -1;
+  strncpy(value, start +1, l);                // copy it into the value parm
+  value[l] = '\0';                            // strncpy doesnt append \0
   
-  if(start == -1 
-    || end == -1) return String();            // didn't find delimiters
+//  Serial.print("nextStr: ");
+//  Serial.println(value);
 
-  pos = end;                                  // found a name
-  return line.substring(start +1, end);
+  return end;
 }
 
-//  Starting at pos, find the next value until , next parameter name or space
-//  Return the value and increment pos to the first character after it
-//
-//  line = "..... =<value>,<value>&<parm>=... "
-//
-String nextValue(const String &line, int &pos) {
-  int start = firstOf(line, "=,", pos);       // following a name or another value
-  int end = firstOf(line, ",&? ", start +1);  // next value or parameter delimiter
-
-  if(start ==-1 
-    || end == -1) return String();            // no delimiter
-
-  pos = end;                                  // found a value
-  return line.substring(start +1, end);
-}
 
 //  Addresses values are added to the lookup cache,
 //  and returned as JSON JS array with their values
-//  Pos incremented after the last one.
 //
-String parseAddressValues(const String &line, int &pos) {
-  String json;
-  json.reserve(512);
+//  line incremented
+//
+void parseAddressValues(char *line, char *json) {
+  char value[50];                                       
 
   //  Loop around each parameter value for a JSON address/value output
   //
-  String value = nextValue(line, pos);                        // First value
-  while(value != "") {
-    int size = 1;                                             // interpret optional <address>.<size>
-    if(value.endsWith(".2")) size = 2;                        // nothing, .1 or .2
+  json[0] = '\0';
+  char *pos = nextValue(line, value);         // First value
+  while(value[0] != '\0') {                   // process all values on the line
 
-    int address = value.toInt();
-    json += getJSON(address, size);                           // stores in the cache & generates...  ,\n"address":data
+    int address = atoi(value);
+    int size = 1;                             // interpret optional <address>.1 or .2    
+    if(strstr(value, ".2")) size = 2;
 
-    value = nextValue(line, pos);                             // Next value
+    getJSON(address, size, json);             // stores in the cache & appends ,"address":data
+    pos = nextValue(pos, value);              // Next value
   }
 
   //  Top & tail the resulting JSON string
   //
-  if(json.length() == 0) {                                    // complete formatting of the json string - top and tail with { }
-    json = "{}";
+  if(json[0] == '\0') {
+    strcpy(json, "{}");                       // valid null json
   } else {
-    json[0] = '{';
-    json += "}";
+    json[0] = '{';                            // over the leading comma
+    strcat(json, "}");                        // after the last value
   }
-
-  return json;
 }

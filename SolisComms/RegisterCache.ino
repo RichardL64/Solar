@@ -50,7 +50,7 @@ int registerIndex(int address, int size = -1) {
 }
 
 //  Return the current data value of a register
-//  Update aging on requests
+//  Update aging on all data requests
 //
 long getRegister(int address, int size){
   int i = registerIndex(address, size);
@@ -61,17 +61,25 @@ long getRegister(int address, int size){
   return cacheData[i];
 }
 
-//  Return the data vlaue of a register as a JSON string
-//  Update aging on requests
+//  Append the data vlaue of a register to the json string
+//  Update aging on all data requests
 //   ,"address":<data>" or ""
 //
-String getJSON(int address, int size) {
-  int i = registerIndex(address, size);
+void getJSON(int address, int size, char *json) {
+  int i = registerIndex(address, size);         // find the cache entry
   cacheAge[i] = millis();                       // update age on all requests
   
-  if(cacheState[i] != DATA_VALID) return "";    // no data
+  if(cacheState[i] != DATA_VALID) return;       // no valid data yet
 
-  return ",\"" + String(address) + "\":" + String(cacheData[i]);
+  char addressS[20], dataS[20];
+  itoa(address, addressS, 10);
+  itoa(cacheData[i], dataS, 10);
+
+  strcat(json, ",\"");
+  strcat(json, addressS);
+  strcat(json, "\":");
+  strcat(json, dataS);
+
 }
 
 //  Set a register data value in cache from its address

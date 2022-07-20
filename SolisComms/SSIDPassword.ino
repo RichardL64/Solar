@@ -10,13 +10,15 @@
 */
 
 #define FILE_NAME "SSIDPASSWORD"
-
+/*
 void setSSIDPassword(String &SSID, String &Password) {
 
   WiFiStorageFile file = WiFiStorage.open(FILE_NAME);
   file.erase();
     
-  String s = SSID + "," + Password;
+  String s = SSID;
+  s += ",";
+  s += Password;
   file.write(s.c_str(), s.length());
 
 }
@@ -37,3 +39,4 @@ bool getSSIDPassword(String &SSID, String &Password) {
   
   return true;
 }
+*/

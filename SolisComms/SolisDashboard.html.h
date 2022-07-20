@@ -40,7 +40,7 @@ const char *dashboardHtml = R"====(
 
 
   Parameters
-    ?inverter=solis.local -or- ?inverter=192.168.1.143
+    ?server=solis.local -or- ?server=192.168.1.143
     Automatically replaced with the live IP addresss when served from the Arduino
 
 
@@ -137,7 +137,7 @@ const char *dashboardHtml = R"====(
             cx="50" cy="50" r="40"
             stroke="whitesmoke"
             stroke-dashoffset="0"
-            stroke-dasharray="146,251">
+            stroke-dasharray="146, 251">
         </circle>
         <circle class="stroke"
             cx="50" cy="50" r="40">
@@ -263,67 +263,100 @@ const char *dashboardHtml = R"====(
 
     //  Inverter register addresses
     //
-    const solarR    = 33057;
-    const battCDR   = 33135;
-    const batteryR  = 33149;
-    const gridR     = 33130;
-    const battSOCR  = 33139;
-    const tempR     = 33093;
+    const SOLAR_R   = 33057;
+    const BATTCD_R  = 33135;
+    const BATTERY_R = 33149;
+    const GRID_R    = 33130;
+    const BATTSOC_R = 33139;
+    const TEMP_R    = 33093;
 
-    //  Parse the inverter URL parameter for callbacks
+    //  Timing constants
+    //
+    const FETCH_TIMEOUT       = 5000;
+    const SERVER_QUERY        = 2000;
+    const FRAME_CHECK         = 1000;
+    const TIMESTAMP_INTERVAL  = 1000;
+    const FRAME_OLD           = 2000;
+    const DATA_OLD            = 5000;
+    const DECIMALS            = 2;
+
+    //  Globals
+    //
+    let newJsonTime = new Date()                            // time data returned by callServer
+    let newJson = {};                                       // latest data returned by callServer
+    let dispJson = {};                                      // latest data displayed by updateDashboard
+
+    let lastFrameTime = new Date();                         // time updateDashboard last called
+
+
+    //  Startup
+    //
+    callServer(SERVER_QUERY, serverURL());                  // continuous periodic data retrieval
+    setInterval(updateTime, TIMESTAMP_INTERVAL);            // regular timestamp updates
+
+
+    //  Parse the server URL parameter for callbacks
     //  When served from the arduino the live ip address replaces the hostname
     //
     //  Arduino searches for <script> then ** etc then "..."
     //  Whatever is between the quotes is replaced with the actual IP address
     //
-    function inverterURL() {
+    function serverURL() {
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
-      let inverterURL = urlParams.get('inverter')
+      let url = urlParams.get('server')
 
       //  *** LIVE IP ADDRESS ***
-      if(inverterURL == null) inverterURL = "solis.local";
+      if(url == null) url = "solis.local";
 
-      console.log(inverterURL);
-      return inverterURL;
+      console.log(url);
+      return url;
     }
 
-    //  Call the server for a data update, calls itself in freq ms
+    //  Call the server for a data update & calls itself once the query completes
     //  When I get new data kick off the dashboard, assuming its stopped animating the previous update
     //  Variable length async response depending how long the fetch takes
     //
-    let newJsonTime = new Date()                            // time data returned
-    let newJson = {};                                       // last data returned
-
-    function callServer(freq) {
+    function callServer(freq, url) {
 
       //  If the last dashboard frame was a while ago - its probably throttled by the browser
       //  We're probably in the background
-      //  Stop doing the server round trip until the browser supports displaying them
+      //  Stop doing the server round trip until the browser will show frames again
       //
-      if(new Date - lastFrameTime > 2000) {
+      if(new Date - lastFrameTime > FRAME_OLD) {
         console.log("no frames");
-        requestAnimationFrame(updateDashboard);             // keep asking for anim frames
-        serverTimeout = setTimeout(callServer, 1000, freq); // keep checking more frequently, preserve the original freq
+        requestAnimationFrame(updateDashboard);
+        setTimeout(callServer, FRAME_CHECK, freq, url);     // keep checking more frequently
         return;
       }
 
-      //  Callback to the server for new data
+      //  Callback to the server for new data - asynchronous so finishes later
       //
-      fetch('http://' + URL + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093')
-        .then(res => res.json())
-        .then(json => {
-          if(json[battCDR] == 1) json[batteryR] *= -1       // Make battery signed - 0=chg, 1=dischg
-          delete json[battCDR]
+      const controller = new AbortController()                                            // watchdog for max fetch time
+      const fetchTimeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
+
+      fetch('http://' + url + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093',
+            { signal: controller.signal })
+
+        .then(response => response.json())                                                // header
+
+        .then(json => {                                                                   // body
+          clearTimeout(fetchTimeout)                                                      // clear the watchdog
+
+          if(json[BATTCD_R] == 1) json[BATTERY_R] *= -1     // Make battery signed - 0=chg, 1=dischg
+          delete json[BATTCD_R]
 
           newJson = json;                                   // newJson is the new target for display
           newJsonTime = Date.now();
           console.log(newJson);
+
+          requestAnimationFrame(updateDashboard);           // Update the dashboard with new values
           })
+
         .catch(err => console.error(err))
+
         .finally(() => {
-            requestAnimationFrame(updateDashboard);         // Update the dashboard with new values
-            setTimeout(callServer, freq, freq);             // call myself
+            setTimeout(callServer, freq, freq, url);        // call myself later
           });
     }
 
@@ -331,9 +364,6 @@ const char *dashboardHtml = R"====(
     //  Once no change is detected, waits on the server response before starting again
     //  Called by the browser animation API so no fixed frequency
     //
-    let lastFrameTime = new Date();
-    let dispJson = {};                                      // the currently displayed json data
-
     function updateDashboard() {
       console.log("frames");
 
@@ -364,12 +394,13 @@ const char *dashboardHtml = R"====(
 
       //  Update the gauges from newJson
       //
-      let d = 2;
-      setValue("solarG",      0,      4000, dispJson[solarR],   (dispJson[solarR]/1000).toFixed(d) +" kW");
-      setValue("batteryG",    -3600,  3600, dispJson[batteryR], (dispJson[batteryR]/1000).toFixed(d) +" kW");
-      setValue("gridG",       -10000, 4000, dispJson[gridR],    (dispJson[gridR]/1000).toFixed(d) +" kW");
-      setValue("batterySOCG", 0,      100,  dispJson[battSOCR], (dispJson[battSOCR]*1).toFixed(0) + "%");
-      document.getElementById("temp").innerHTML = (newJson[tempR]/10).toFixed(1);
+      setValue("solarG",      0,      4000, dispJson[SOLAR_R],    (dispJson[SOLAR_R]  /1000).toFixed(DECIMALS) + " kW");
+      setValue("batteryG",    -3600,  3600, dispJson[BATTERY_R],  (dispJson[BATTERY_R]/1000).toFixed(DECIMALS) + " kW");
+      setValue("gridG",       -10000, 4000, dispJson[GRID_R],     (dispJson[GRID_R]   /1000).toFixed(DECIMALS) + " kW");
+      setValue("batterySOCG", 0,      100,  dispJson[BATTSOC_R],  (dispJson[BATTSOC_R]*1).toFixed(0) + "%");
+
+      if(!isNaN(dispJson[TEMP_R]))
+        document.getElementById("temp").innerHTML = (dispJson[TEMP_R]/10).toFixed(1);
 
       //  If there are changes - request more animation frames = ~60fps or more
       //
@@ -382,23 +413,14 @@ const char *dashboardHtml = R"====(
     //
     function updateTime() {
       let now = new Date();
-      let dataAge = now - newJsonTime;
 
-      if(dataAge < 5000) {
+      if(now - newJsonTime < DATA_OLD) {
         document.getElementById("time").innerHTML = "Updated at " + now.toLocaleTimeString();
         return;
       }
 
-      document.getElementById("time").innerHTML = "Updated " + (dataAge /1000).toFixed(0) + " secs ago";
+      document.getElementById("time").innerHTML = "Waiting for data";
     }
-
-
-    //  Startup
-    //
-    const URL = inverterURL()                           // URL from ?inverter=
-    callServer(2000);                                   // continuous periodic data retrieval
-    setInterval(updateTime, 1000);                      // regular timestamp updates
-
 
     //  Set the value and value text for the passed gauge ID
     //  Updates id and id+"T" elements
@@ -408,7 +430,7 @@ const char *dashboardHtml = R"====(
     //
     function setValue(id, min, max, val, valDisp) {
 
-      if (isNaN(val)) return;                     // no value - ignore
+      if(isNaN(val)) return;                      // no value - ignore
 
       //  Value text
       //
