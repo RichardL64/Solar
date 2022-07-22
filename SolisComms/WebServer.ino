@@ -162,7 +162,7 @@ void parseLine(WiFiClient client, char *line) {
     httpHeader(client, refresh);
         
     if(strcmp(name, "address") == 0) {        // ?address=<value>,<value>...
-      parseAddressValues(pos, json);
+      pos = parseAddressValues(pos, json);
       client.print(json);
     }
     httpFooter(client);
@@ -188,19 +188,19 @@ void parseLine(WiFiClient client, char *line) {
   if(strstr(line, "GET /C") != 0) {          // Readout the cache
     httpHeader(client);
     client.print(F("Register cache<br>"));
-    for(int i = 0; i<CACHE_SIZE; i++) {
+    for(int i = 0; i < CACHE_SIZE; i++) {
       client.print("[");
       client.print(i);
-      client.print("] ");
-      client.print(cacheAddress[i]);
-      client.print(".");
-      client.print(cacheSize[i]);
-      client.print(" = ");
-      client.print(cacheData[i]);
-      client.print(" (");
-      client.print(cacheState[i]);
+      client.print("] (");
+      client.print(regCache[i].state);
       client.print(") @");
-      client.print(cacheAge[i]);
+      client.print(regCache[i].age);
+      client.print(" ");
+      client.print(regCache[i].address);
+      client.print(".");
+      client.print(regCache[i].size);
+      client.print(" = ");
+      client.print(regCache[i].value);
       client.print("<br>");
     }
     httpFooter(client);
@@ -289,10 +289,9 @@ char *nextStr(char *line, const char *d1, const char *d2, char *value) {
 
 //  Addresses values are added to the lookup cache,
 //  and returned as JSON JS array with their values
+//  Returns the pointer after the last one
 //
-//  line incremented
-//
-void parseAddressValues(char *line, char *json) {
+char *parseAddressValues(char *line, char *json) {
   char value[50];                                       
 
   //  Loop around each parameter value for a JSON address/value output
@@ -317,4 +316,6 @@ void parseAddressValues(char *line, char *json) {
     json[0] = '{';                            // over the leading comma
     strcat(json, "}");                        // after the last value
   }
+
+  return pos;
 }

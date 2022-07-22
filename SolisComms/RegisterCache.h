@@ -14,21 +14,22 @@
 
 */
 
-#define CACHE_OLD 1000*60*5                   // minutes entry is not requested, remove it
-#define CACHE_SIZE 20                         // Register cache table across all clients
+#define CACHE_OLD 1000*60*5                   // if a register is not requested for a while remove it
+#define CACHE_SIZE 20                         // register cache table across all clients
 
-#define DATA_NULL 0                           // no record ever returned
-#define DATA_VALID 1                          // data is good
-#define DATA_ERROR 2                          // modbus/rs485 threw an error on retreival
+#define STATE_NULL  0                         // no record ever returned
+#define STATE_VALID 1                         // data is good
+#define STATE_ERROR 2                         // modbus/rs485 threw an error on retreival
 
-int           cacheAddress[CACHE_SIZE];       // Register base address
-int           cacheSize[CACHE_SIZE];          // 1 or 2 registers
-long          cacheData[CACHE_SIZE];          // Register value - enuogh space for a double register
-byte          cacheState[CACHE_SIZE];         // flag re condition of the data value
-unsigned long cacheAge[CACHE_SIZE];           // millis last time this register was retreived
-
+//  Local register cache
+struct {
+    byte state;                               // entry status STATE_
+    unsigned long age;                        // millis last time this register was requested
+    int address;                              // Register base address
+    int size;                                 // 1 or 2 registers
+    long value;                               // Register value - enuogh space for a double register
+} regCache[CACHE_SIZE];
 
 //  Prototypes
-
-void setRegister(int address, long data, int state = DATA_VALID);
-void setCache(int i, long data, int state = DATA_VALID);
+void setRegister(int address, long data, int state = STATE_VALID);
+void setCache(int i, long data, int state = STATE_VALID);

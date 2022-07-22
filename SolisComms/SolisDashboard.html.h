@@ -25,7 +25,7 @@ const char *dashboardHtml = R"====(
   <meta name="referrer" content="no-referrer" />
   <meta name="author" content="Richard Lincoln July 2022" />
   <meta name="description" content="https://github.com/RichardL64/Solar" />
-  <title>Solis Dashboard</title>
+  <title>Solar Dashboard</title>
 
 <!--
 
@@ -79,6 +79,31 @@ const char *dashboardHtml = R"====(
     display: flex;
     flex-direction: row-reverse;
     align-self: flex-end;
+  }
+
+  .gTitle {
+    font-size: 50%;
+    font-weight: normal;
+    fill: black;
+    dominant-baseline: hanging;
+  }
+
+  .kW {
+    font-size: 100%;
+    font-weight: normal;
+    fill: darkgrey;
+    alignment-baseline: middle;
+    dominant-baseline: middle;
+    text-anchor: middle;
+  }
+
+  .underkW {
+    font-size: 40%;
+    font-weight: normal;
+    fill: darkgrey;
+    alignment-baseline: middle;
+    dominant-baseline: middle;
+    text-anchor: middle;
   }
 
   #gauges {
@@ -149,6 +174,16 @@ const char *dashboardHtml = R"====(
             stroke-dasharray=".5, 251">
         </circle>
       </g>
+
+      <circle id="20percent-tick" class="tick"
+          cx="50" cy="50" r="40"
+          transform="rotate(165, 50, 50)"
+          fill="transparent"
+          stroke="lightgreen"
+          stroke-width="8"
+          stroke-dashoffset="-29"
+          stroke-dasharray=".5, 251">
+      </circle>
     </defs>
   </svg>
 
@@ -161,27 +196,18 @@ const char *dashboardHtml = R"====(
   <div id="gauges">
 
       <div>
-        Solar
         <svg viewbox="0 0 100 65">
           <use id="solarG" href="#gauge"
             stroke="gold"
             stroke-dasharray="0, 251">
           </use>
-          <text id="solarGT"
-            x="50" y="50"
-            font-size="100%"
-            font-family="sans-serif"
-            font-weight="normal"
-            fill="darkgrey"
-            text-anchor="middle"
-            alignment-baseline="middle"
-            dominant-baseline="middle">
-          </text>
+          <text class="gTitle" y="2">Solar</text>
+          <text id="solarGT" class="kW" x="50" y="50">...</text>
+          <text id="solarGT2" class="underkW" x="50" y="60">...</text>
         </svg>
       </div>
 
       <div>
-        Battery
         <svg viewbox="0 0 100 65">
           <use id="batteryG" href="#gauge"
             stroke="cornflowerblue"
@@ -189,21 +215,13 @@ const char *dashboardHtml = R"====(
             stroke-dasharray="0, 251"
             transform="">
           </use>
-          <text id="batteryGT"
-            x="50" y="50"
-            font-size="100%"
-            font-family="sans-serif"
-            font-weight="normal"
-            fill="darkgrey"
-            text-anchor="middle"
-            alignment-baseline="middle"
-            dominant-baseline="middle">
-          </text>
+          <text class="gTitle" y="2">Battery</text>
+          <text id="batteryGT" class="kW" x="50" y="50">...</text>
+          <text id="batteryGT2" class="underkW" x="50" y="60">...</text>
         </svg>
       </div>
 
       <div>
-        Grid
         <svg viewbox="0 0 100 65">
           <use id="gridG" href="#gauge"
             stroke="cornflowerblue"
@@ -211,16 +229,9 @@ const char *dashboardHtml = R"====(
             stroke-dasharray="0, 251"
             transform="">
           </use>
-          <text id="gridGT"
-            x="50" y="50"
-            font-size="100%"
-            font-family="sans-serif"
-            font-weight="normal"
-            fill="darkgrey"
-            text-anchor="middle"
-            alignment-baseline="middle"
-            dominant-baseline="middle">
-          </text>
+          <text class="gTitle" y="2">Grid</text>
+          <text id="gridGT" class="kW" x="50" y="50">...</text>
+          <text id="gridGT2" class="underkW" x="50" y="60">...</text>
         </svg>
       </div>
 
@@ -234,16 +245,9 @@ const char *dashboardHtml = R"====(
             stroke="darkseagreen"
             stroke-dasharray="0, 251">
           </use>
-          <text id="batterySOCGT"
-            x="50" y="50"
-            font-size="100%"
-            font-family="sans-serif"
-            font-weight="normal"
-            fill="darkgrey"
-            text-anchor="middle"
-            alignment-baseline="middle"
-            dominant-baseline="middle">
-          </text>
+          <text id="batterySOCGT" class="kW" x="50" y="50">...</text>
+          <use href="#20percent-tick"
+          </use>
         </svg>
       </div>
 
@@ -263,22 +267,37 @@ const char *dashboardHtml = R"====(
 
     //  Inverter register addresses
     //
-    const SOLAR_R   = 33057;
-    const BATTCD_R  = 33135;
-    const BATTERY_R = 33149;
-    const GRID_R    = 33130;
-    const BATTSOC_R = 33139;
-    const TEMP_R    = 33093;
+    const SOLAR_R           = 33057;
+    const BATTCD_R          = 33135;
+    const BATTERY_R         = 33149;
+    const GRID_R            = 33130;
+    const BATTSOC_R         = 33139;
+    const TEMP_R            = 33093;
+
+    const GEN_TODAY_R       = 33035;
+    const GEN_YEST_R        = 33036;
+
+    const CHG_TODAY_R       = 33163;          // 0.1 kWh
+    const CHG_YEST_R        = 33164;
+
+    const DIS_TODAY_R       = 33167;          // 0.1 kWh
+    const DIS_YEST_R        = 33168;
+
+    const GRID_IMP_TODAY_R  = 33171;
+    const GRID_IMP_YEST_R   = 33172;
+    const GRID_EXP_TODAY_R  = 33175;
+    const GRID_EXP_YEST_R   = 33176;
 
     //  Timing constants
     //
     const FETCH_TIMEOUT       = 5000;
-    const SERVER_QUERY        = 2000;
+    const SERVER_INTERVAL     = 2000;
     const FRAME_CHECK         = 1000;
     const TIMESTAMP_INTERVAL  = 1000;
     const FRAME_OLD           = 2000;
     const DATA_OLD            = 5000;
-    const DECIMALS            = 2;
+    const KW_DECIMALS         = 2;
+    const KWH_DECIMALS        = 1;
 
     //  Globals
     //
@@ -291,7 +310,7 @@ const char *dashboardHtml = R"====(
 
     //  Startup
     //
-    callServer(SERVER_QUERY, serverURL());                  // continuous periodic data retrieval
+    callServer(SERVER_INTERVAL, serverURL());               // continuous periodic data retrieval
     setInterval(updateTime, TIMESTAMP_INTERVAL);            // regular timestamp updates
 
 
@@ -335,16 +354,16 @@ const char *dashboardHtml = R"====(
       const controller = new AbortController()                                            // watchdog for max fetch time
       const fetchTimeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
 
-      fetch('http://' + url + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093',
+      fetch('http://'
+          + url
+          + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093,33035,33171,33163,33167',
             { signal: controller.signal })
 
-        .then(response => response.json())                                                // header
+        .then(response => response.json())                  // header
 
-        .then(json => {                                                                   // body
-          clearTimeout(fetchTimeout)                                                      // clear the watchdog
-
+        .then(json => {                                     // body
           if(json[BATTCD_R] == 1) json[BATTERY_R] *= -1     // Make battery signed - 0=chg, 1=dischg
-          delete json[BATTCD_R]
+          delete json[BATTCD_R]                             // do this here to avoid issues with animation frames on the 0/1 value
 
           newJson = json;                                   // newJson is the new target for display
           newJsonTime = Date.now();
@@ -356,6 +375,7 @@ const char *dashboardHtml = R"====(
         .catch(err => console.error(err))
 
         .finally(() => {
+            clearTimeout(fetchTimeout);                     // clear the watchdog
             setTimeout(callServer, freq, freq, url);        // call myself later
           });
     }
@@ -392,13 +412,32 @@ const char *dashboardHtml = R"====(
         changes = true;                                     // at least one value moved!
       }
 
-      //  Update the gauges from newJson
+      //  Update the gauges from dispJson
       //
-      setValue("solarG",      0,      4000, dispJson[SOLAR_R],    (dispJson[SOLAR_R]  /1000).toFixed(DECIMALS) + " kW");
-      setValue("batteryG",    -3600,  3600, dispJson[BATTERY_R],  (dispJson[BATTERY_R]/1000).toFixed(DECIMALS) + " kW");
-      setValue("gridG",       -10000, 4000, dispJson[GRID_R],     (dispJson[GRID_R]   /1000).toFixed(DECIMALS) + " kW");
+      setValue("solarG",      0,      4000, dispJson[SOLAR_R],    (dispJson[SOLAR_R]  /1000).toFixed(KW_DECIMALS) + " kW");
+      setValue("batteryG",    -3600,  3600, dispJson[BATTERY_R],  (dispJson[BATTERY_R]/1000).toFixed(KW_DECIMALS) + " kW");
+      setValue("gridG",       -10000, 4000, dispJson[GRID_R],     (dispJson[GRID_R]   /1000).toFixed(KW_DECIMALS) + " kW");
       setValue("batterySOCG", 0,      100,  dispJson[BATTSOC_R],  (dispJson[BATTSOC_R]*1).toFixed(0) + "%");
 
+      if(!isNaN(dispJson[GEN_TODAY_R]))
+        document.getElementById("solarGT2").innerHTML = (dispJson[GEN_TODAY_R]/10).toFixed(KWH_DECIMALS) + " kWh";
+
+      if(!isNaN(dispJson[CHG_TODAY_R])
+      && !isNaN(dispJson[DIS_TODAY_R])) {                 // battery net position today
+        let net = (dispJson[CHG_TODAY_R] - dispJson[DIS_TODAY_R])/10;
+        document.getElementById("batteryGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
+      }
+
+      if(!isNaN(dispJson[GRID_IMP_TODAY_R])) {            // grid import. Export irrelevant (to me)
+        let net = (dispJson[GRID_IMP_TODAY_R])/-10;
+        document.getElementById("gridGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
+      }
+/*
+      if(!isNaN(dispJson[GRID_IMP_TODAY_R]) && !isNaN(dispJson[GRID_EXP_TODAY_R])) {
+        let net = (dispJson[GRID_EXP_TODAY_R] - dispJson[GRID_IMP_TODAY_R])/10;
+        document.getElementById("gridGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
+      }
+*/
       if(!isNaN(dispJson[TEMP_R]))
         document.getElementById("temp").innerHTML = (dispJson[TEMP_R]/10).toFixed(1);
 
@@ -423,7 +462,7 @@ const char *dashboardHtml = R"====(
     }
 
     //  Set the value and value text for the passed gauge ID
-    //  Updates id and id+"T" elements
+    //  Updates id elements moving the dial stroke proportionately
     //
     //  Where min is -ve the zero point is always at 12 o'clock
     //  Scales left/right of the central zero point can be different

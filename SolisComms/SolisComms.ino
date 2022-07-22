@@ -182,16 +182,16 @@ void loop() {
   
   cacheAgeCheck(index);                                     // cull unaccessed cache entries
 
-  int address =  cacheAddress[index];
+  int address =  regCache[index].address;
   if(address != 0
     && (millis() - lastCollect > MODBUS_DELAY)) {           // if there is an address to collect & not too frequent
     lastCollect = millis();
 
     Serial.print(address);
 
-    int size = cacheSize[index];
+    int size = regCache[index].size;
     if(!ModbusRTUClient.requestFrom(1, INPUT_REGISTERS, address, size)) {
-        setCache(index, 0, DATA_ERROR);
+        setCache(index, 0, STATE_ERROR);
 
         Serial.println(F(" = Data error"));
 
