@@ -14,7 +14,7 @@
 
 */
 
-#define CACHE_OLD 1000*60*5                   // if a register is not requested for a while remove it
+#define CACHE_OLD 1000*60*2                   // if a register is not requested for a while remove it
 #define CACHE_SIZE 20                         // register cache table across all clients
 
 #define STATE_NULL  0                         // no record ever returned
