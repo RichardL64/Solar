@@ -11,7 +11,7 @@
 
 	Proof of concept dashboard to present Arduino gathered live SOLIS inverter data
 
-	V2.1
+	V3.0
 	Circle based gauge construction vs. previous arcs
 	Simplification & removal of external depdencies
 
@@ -49,16 +49,23 @@
 		border:1px solid black;
 	}
 
+	.bottom {
+		position: relative;
+	}
 	.bottom-left {
 		display: flex;
 		flex-direction: column;
-		align-self: flex-end;
+		position: absolute;
+		bottom: 5%;
+		left: 10%;
 	}
-
 	.bottom-right {
 		display: flex;
-		flex-direction: row-reverse;
-		align-self: flex-end;
+		flex-direction: column;
+		position: absolute;
+		bottom: 5%;
+		right: 10%;
+		text-align: right;
 	}
 
 	.gTitle {
@@ -66,6 +73,7 @@
 		font-weight: normal;
 		fill: black;
 		dominant-baseline: hanging;
+		text-anchor: middle;
 	}
 
 	.kW {
@@ -87,11 +95,10 @@
 	}
 
 	#gauges {
-		width: 90%;
+		width: 95%;
 		margin: auto;
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
-		padding: 10px;
 	}
 
 
@@ -117,9 +124,11 @@
 
 				Radius											 	40	pixels
 				Circumference	2 *Pi *40 		= 251 pixels
+											2 *Pi *31			= 195
 
 				Dial circ.						  			210 degrees
 											251 /360 *210	= 146 pixels
+											195 /360 *210 = 113
 
 					1% of dial	147 /100			= 1.46
 
@@ -155,14 +164,14 @@
 				</circle>
 			</g>
 
-			<circle id="20percent-tick" class="tick"
+			<circle id="1020-tick" class="tick"
 					cx="50" cy="50" r="40"
 					transform="rotate(165, 50, 50)"
 					fill="transparent"
-					stroke="lightgreen"
+					stroke="darkgrey"
 					stroke-width="8"
-					stroke-dashoffset="-29"
-					stroke-dasharray=".5, 251">
+					stroke-dashoffset="-14.6"
+					stroke-dasharray=".5, 14, .5, 251">
 			</circle>
 		</defs>
 	</svg>
@@ -181,7 +190,7 @@
 						stroke="gold"
 						stroke-dasharray="0, 251">
 					</use>
-					<text class="gTitle" y="2">Solar</text>
+					<text class="gTitle" x="50" y="28">Solar</text>
 					<text id="solarGT" class="kW" x="50" y="50">...</text>
 					<text id="solarGT2" class="underkW" x="50" y="60">...</text>
 				</svg>
@@ -190,14 +199,13 @@
 			<div>
 				<svg viewbox="0 0 100 65">
 					<use id="batteryG" href="#gauge"
-						stroke="cornflowerblue"
+						stroke="darkseagreen"
 						stroke-dashoffset="-73"
 						stroke-dasharray="0, 251"
 						transform="">
 					</use>
-					<text class="gTitle" y="2">Battery</text>
+					<text class="gTitle" x="50" y="28">Battery</text>
 					<text id="batteryGT" class="kW" x="50" y="50">...</text>
-					<text id="batteryGT2" class="underkW" x="50" y="60">...</text>
 				</svg>
 			</div>
 
@@ -209,14 +217,23 @@
 						stroke-dasharray="0, 251"
 						transform="">
 					</use>
-					<text class="gTitle" y="2">Grid</text>
+					<text class="gTitle" x="50" y="28">Grid</text>
 					<text id="gridGT" class="kW" x="50" y="50">...</text>
-					<text id="gridGT2" class="underkW" x="50" y="60">...</text>
+					<text id="gridGT2" class="underkW" x="50" y="60"></text>
 				</svg>
 			</div>
 
-			<div class="bottom-left">
-				<span>Inverter temp. <label id="temp"></label>&#8451;</span>
+			<div>
+				<svg viewbox="0 0 100 65">
+					<use id="houseG" href="#gauge"
+						stroke="darkorange"
+						stroke-dasharray="0, 251"
+						transform="">
+					</use>
+					<text class="gTitle" x="50" y="28">Demand</text>
+					<text id="houseGT" class="kW" x="50" y="50">...</text>
+					<text id="houseGT2" class="underkW" x="50" y="60"></text>
+				</svg>
 			</div>
 
 			<div>
@@ -225,14 +242,18 @@
 						stroke="darkseagreen"
 						stroke-dasharray="0, 251">
 					</use>
+					<text class="gTitle" x="50" y="28">Charge level</text>
 					<text id="batterySOCGT" class="kW" x="50" y="50">...</text>
-					<use href="#20percent-tick"
-					</use>
+					<use href="#1020-tick"</use>
 				</svg>
 			</div>
 
+
+			<div class="bottom">
 			<div class="bottom-right">
-				<span><label id="time"></label></span>
+				<span>Inverter temp. <label id="temp"></label>&#8451;</span>
+				<span><label id="time">...</label></span>
+			</div>
 			</div>
 
 	</div>
@@ -267,6 +288,9 @@
 		const GRID_IMP_YEST_R		= 33172;
 		const GRID_EXP_TODAY_R	= 33175;
 		const GRID_EXP_YEST_R		= 33176;
+
+		const HOUSE_R						= 33147						// calculated locally
+		const HOUSE_TODAY_R			= 33179
 
 		//	Timing constants
 		//
@@ -336,14 +360,16 @@
 
 			fetch('http://'
 					+ url
-					+ '/R?address=33057.2,33135,33149.2,33139,33130.2,33093,33035,33171,33163,33167',
+					+ '/R?address=33057.2,33135,33149.2,33139,33130.2,33093,33035,33171,33179',
 						{ signal: controller.signal })
 
 				.then(response => response.json())									// header
 
 				.then(json => {																			// body
-					if(json[BATTCD_R] == 1) json[BATTERY_R] *= -1			// Make battery signed - 0=chg, 1=dischg
+					if(json[BATTCD_R] == 0) json[BATTERY_R] *= -1			// Make battery signed - 0=chg, 1=dischg
 					delete json[BATTCD_R]															// do this here to avoid issues with animation frames on the 0/1 value
+
+					json[HOUSE_R] = json[SOLAR_R] - json[GRID_R] + json[BATTERY_R]
 
 					newJson = json;																		// newJson is the new target for display
 					newJsonTime = Date.now();
@@ -370,7 +396,8 @@
 			lastFrameTime = new Date;															// detect browser slowing screen updates
 
 			//	Move dispJson towards newJson incrementally
-			//	Keep a record of anything changing
+			//	Keep a record of anything changing so we know when to stop asking for animation frames
+			//	CSS transition is not used because of the mirrored gauges and going through 0
 			//
 			let changes = false																		// posit nothing will change
 			for(const reg in newJson) {
@@ -381,7 +408,7 @@
 				}
 
 				let delta = newJson[reg] - dispJson[reg];
-				if(Math.abs(delta) <= 1 ) {													// delta is close enough - copy the latest data
+				if(Math.abs(delta) <= .5 ) {												// delta is close enough - copy the latest data
 					dispJson[reg] = newJson[reg];
 					continue;
 				}
@@ -392,32 +419,32 @@
 				changes = true;																			// at least one value moved!
 			}
 
+
 			//	Update the gauges from dispJson
 			//
-			setValue("solarG", 			0, 			4000,	dispJson[SOLAR_R],		(dispJson[SOLAR_R]	/1000).toFixed(KW_DECIMALS) + " kW");
-			setValue("batteryG",		-3600, 	3600,	dispJson[BATTERY_R],	(dispJson[BATTERY_R]/1000).toFixed(KW_DECIMALS) + " kW");
-			setValue("gridG", 			-10000,	4000,	dispJson[GRID_R],			(dispJson[GRID_R]		/1000).toFixed(KW_DECIMALS) + " kW");
-			setValue("batterySOCG",	0, 			100, 	dispJson[BATTSOC_R],	(dispJson[BATTSOC_R]*1).toFixed(0) + "%");
+			setValue("solarG", 			0,		 4000, dispJson[SOLAR_R],		(dispJson[SOLAR_R]	/1000).toFixed(KW_DECIMALS) + " kW");
+			setValue("batteryG",		-3600, 3600, dispJson[BATTERY_R],	(dispJson[BATTERY_R]/1000).toFixed(KW_DECIMALS) + " kW");
+			setValue("gridG", 			-4000,10000, -dispJson[GRID_R],		-(dispJson[GRID_R]	/1000).toFixed(KW_DECIMALS) + " kW");
+			setValue("batterySOCG",	0,			100, dispJson[BATTSOC_R],	dispJson[BATTSOC_R].toFixed(0) + "%");
+			setValue("houseG", 			0,		10000, dispJson[HOUSE_R],		-(dispJson[HOUSE_R]	/1000).toFixed(KW_DECIMALS) + " kW");
 
-			if(!isNaN(dispJson[GEN_TODAY_R]))
-				document.getElementById("solarGT2").innerHTML = (dispJson[GEN_TODAY_R]/10).toFixed(KWH_DECIMALS) + " kWh";
 
-			if(!isNaN(dispJson[CHG_TODAY_R])
-			&& !isNaN(dispJson[DIS_TODAY_R])) {									// battery net position today
-				let net = (dispJson[CHG_TODAY_R] - dispJson[DIS_TODAY_R])/10;
-				document.getElementById("batteryGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
+			if(!isNaN(dispJson[GEN_TODAY_R])) {										// solar generated
+				let net = (dispJson[GEN_TODAY_R])/10;
+				document.getElementById("solarGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
 			}
 
-			if(!isNaN(dispJson[GRID_IMP_TODAY_R])) {						// grid import. Export irrelevant (to me)
-				let net = (dispJson[GRID_IMP_TODAY_R])/-10;
+			if(!isNaN(dispJson[GRID_IMP_TODAY_R])) {							// grid imported
+				let net = (dispJson[GRID_IMP_TODAY_R])/10;
 				document.getElementById("gridGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
 			}
-/*
-			if(!isNaN(dispJson[GRID_IMP_TODAY_R]) && !isNaN(dispJson[GRID_EXP_TODAY_R])) {
-				let net = (dispJson[GRID_EXP_TODAY_R] - dispJson[GRID_IMP_TODAY_R])/10;
-				document.getElementById("gridGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
+
+			if(!isNaN(dispJson[HOUSE_TODAY_R])) {									// house used
+				let net = (dispJson[HOUSE_TODAY_R])/10;
+				document.getElementById("houseGT2").innerHTML = -net.toFixed(KWH_DECIMALS) + " kWh";
 			}
-*/
+
+
 			if(!isNaN(dispJson[TEMP_R]))
 				document.getElementById("temp").innerHTML = (dispJson[TEMP_R]/10).toFixed(1);
 
