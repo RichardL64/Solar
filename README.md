@@ -17,7 +17,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 ## Known issues:
 
- - mDNS seems to lockup sometimes esp. on mobile devices - there's prboably a loop/ungraceful disconnect handling somewhere in the webserver code.
+ - mDNS seems to lockup sometimes esp. moving between mesh wifi transmitters.
 
 ## Intention:
 
