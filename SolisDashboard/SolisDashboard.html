@@ -375,9 +375,11 @@
 					delete newJson[BATTCD_R];													// do this here to avoid issues with animation frames on the 0/1 value
 
 					newJson[HOUSE_R] = newJson[SOLAR_R]
-												- newJson[GRID_R]
-												+ newJson[BATTERY_R];
-
+													 - newJson[GRID_R]
+													 + newJson[BATTERY_R];
+					if(isNaN(newJson[HOUSE_R])) {											// don't let NaNs through
+						delete newJson[HOUSE_R];
+					}
 					console.log(newJson);
 
 					requestAnimationFrame(updateDashboard);						// Update the dashboard with new values
@@ -426,11 +428,12 @@
 
 
 			//	Update the gauges from dispJson
+			//	doing any math e.g. /1 ensures no NaN's get through
 			//
 			setValue("solarG", 			0,		 4000, dispJson[SOLAR_R],		(dispJson[SOLAR_R]	/1000).toFixed(KW_DECIMALS) + " kW");
 			setValue("batteryG",		-3600, 3600, dispJson[BATTERY_R],	(dispJson[BATTERY_R]/1000).toFixed(KW_DECIMALS) + " kW");
 			setValue("gridG", 			-4000,10000, -dispJson[GRID_R],		-(dispJson[GRID_R]	/1000).toFixed(KW_DECIMALS) + " kW");
-			setValue("batterySOCG",	0,			100, dispJson[BATTSOC_R],	dispJson[BATTSOC_R].toFixed(0) + "%");
+			setValue("batterySOCG",	0,			100, dispJson[BATTSOC_R],	(dispJson[BATTSOC_R]/1).toFixed(0) + "%");
 			setValue("houseG", 			0,		10000, dispJson[HOUSE_R],		-(dispJson[HOUSE_R]	/1000).toFixed(KW_DECIMALS) + " kW");
 
 
