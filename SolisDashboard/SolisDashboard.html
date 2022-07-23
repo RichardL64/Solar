@@ -366,13 +366,18 @@
 				.then(response => response.json())									// header
 
 				.then(json => {																			// body
-					if(json[BATTCD_R] == 0) json[BATTERY_R] *= -1			// Make battery signed - 0=chg, 1=dischg
-					delete json[BATTCD_R]															// do this here to avoid issues with animation frames on the 0/1 value
-
-					json[HOUSE_R] = json[SOLAR_R] - json[GRID_R] + json[BATTERY_R]
-
 					newJson = json;																		// newJson is the new target for display
 					newJsonTime = Date.now();
+
+					if(newJson[BATTCD_R] == 0) {
+						newJson[BATTERY_R] *= -1;												// Make battery signed - 0=chg, 1=dischg
+					}
+					delete newJson[BATTCD_R];													// do this here to avoid issues with animation frames on the 0/1 value
+
+					newJson[HOUSE_R] = newJson[SOLAR_R]
+												- newJson[GRID_R]
+												+ newJson[BATTERY_R];
+
 					console.log(newJson);
 
 					requestAnimationFrame(updateDashboard);						// Update the dashboard with new values
