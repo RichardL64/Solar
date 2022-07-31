@@ -196,13 +196,14 @@ void loop() {
         Serial.println(F(" = Data error"));
 
     } else {                                                // else good data
-        long data = 0;
-        if(size == 2) data = ModbusRTUClient.read() <<16;   // 32 bit High 16
-        data |=  ModbusRTUClient.read();                    // Low 16 bits
-        setCache(index, data);
+        long value = 0;
+        if(size == 2) value = ModbusRTUClient.read() <<16;  // 32 bit High 16
+        value |=  ModbusRTUClient.read();                   // Low 16 bits
+        setCache(index, value);                             // update the real time cache
+        setHistory(address, value);                         // upate history
 
         Serial.print(F(" = "));
-        Serial.println(data);
+        Serial.println(value);
     }
 
   }

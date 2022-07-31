@@ -87,7 +87,7 @@ void nextLine(WiFiClient client, char *line) {
 //  Creates any activity and HTML response required
 //
 void parseLine(WiFiClient client, char *line) {
-  char name[50], value[50], json[512];
+  char name[50], value[50], json[512];          // general purose buffers
       
   //  Historic entry points - useful for basic testing
   //
@@ -99,7 +99,7 @@ void parseLine(WiFiClient client, char *line) {
     return;
   }
 
-  if(strstr(line,"GET /L") != 0){             // LED off
+  if(strstr(line,"GET /L") != 0){               // LED off
     digitalWrite(LED_BUILTIN, LOW);
     httpHeader(client);
     client.print(F("LED off"));
@@ -154,21 +154,54 @@ void parseLine(WiFiClient client, char *line) {
     char *pos = nextName(line, name);
     
     int refresh = 0;                          // ?refresh=n  parameter must come first for the header
-    if(strcmp(name, "refresh") == 0) {
+    if(name[0] == 'r') {
       pos = nextValue(pos, value);      
       refresh = atoi(value);
       pos = nextName(pos, name);
     }
     httpHeader(client, refresh);
         
-    if(strcmp(name, "address") == 0) {        // ?address=<value>,<value>...
-      pos = parseAddressValues(pos, json);
+    if(name[0] == 'a') {                      // ?address=<value>,<value>...
+      pos = parseAddressValues(pos, "data",  json);
       client.print(json);
     }
     httpFooter(client);
     return;
   }
 
+  if(strstr(line, "GET /H") != 0) {           // Setup historic data collection   /H?minutes=<m/h/d>&keep=<d>&address=<address>...
+    char *pos = nextName(line, name);
+    char range = 'h';
+    int freq = 1, keep = 1, address;
+
+    if(name[0] == 'm'
+    || name[0] == 'h' 
+    || name[0] == 'd') {                      // # minutes, hours, days collection frequency
+      pos = nextValue(pos, value);
+      range = name[0];
+      freq = atoi(value);
+      pos = nextName(pos, name);
+    }
+    if(name[0] == 'k') {                      // # days to keep
+      pos = nextValue(pos, value);
+      keep = atoi(value);
+      pos = nextName(pos, name);
+    }
+    if(name[0] == 'a') {                            // address values to collect
+      pos = nextValue(pos, value);                  // First value
+      while(value[0] != '\0') {                     // process all values requested
+        address = atoi(value);
+        keepHistory(range, freq, keep, address);    // instruct the history routines
+        pos = nextValue(pos, value);                // next value
+      }
+    }
+
+    
+    httpHeader(client);
+    httpFooter(client);
+    return;    
+  }
+  
   if(strstr(line, "GET /S") != 0) {           // Stop collecting register values  /S?address=<address>
     char *pos = nextName(line, name);
     
@@ -203,6 +236,8 @@ void parseLine(WiFiClient client, char *line) {
       client.print(regCache[i].value);
       client.print("<br>");
     }
+
+    client.print(F("History cache<br>"));
     httpFooter(client);
     return;
   }
@@ -287,35 +322,43 @@ char *nextStr(char *line, const char *d1, const char *d2, char *value) {
 }
 
 
-//  Addresses values are added to the lookup cache,
-//  and returned as JSON JS array with their values
+//  Parse the passed paramter line
+//  Address values are added to the lookup cache and returned as a JSON array
 //  Returns the pointer after the last one
 //
-char *parseAddressValues(char *line, char *json) {
-  char value[50];                                       
+//  {"data":[1, 100, 262, -144, 12, 417, 173, 43, 55]}
+//
+char *parseAddressValues(char *line, const char *label, char *json) {
+  char valueS[50], regS[10];
 
-  //  Loop around each parameter value for a JSON address/value output
+  //  Loop around each parameter value building the json array
   //
   json[0] = '\0';
-  char *pos = nextValue(line, value);         // First value
-  while(value[0] != '\0') {                   // process all values on the line
+  strcat(json, "{\"");                        // {"label":[
+  strcat(json, label);
+  strcat(json, "\":[");
+  
+  char *pos = nextValue(line, valueS);        // First value
+  while(valueS[0] != '\0') {                  // process all values requested
 
-    int address = atoi(value);
+    int address = atoi(valueS);
     int size = 1;                             // interpret optional <address>.1 or .2    
-    if(strstr(value, ".2")) size = 2;
+    if(strstr(valueS, ".2")) size = 2;
 
-    getJSON(address, size, json);             // stores in the cache & appends ,"address":data
-    pos = nextValue(pos, value);              // Next value
+    long reg = getRegister(address, size);
+    itoa(reg, regS, 10);                      // base10 string
+    strcat(json, regS);                       // value,
+    strcat(json, ",");
+
+    pos = nextValue(pos, valueS);             // Next value
   }
 
-  //  Top & tail the resulting JSON string
+  //  Adjust the tail
   //
-  if(json[0] == '\0') {
-    strcpy(json, "{}");                       // valid null json
-  } else {
-    json[0] = '{';                            // over the leading comma
-    strcat(json, "}");                        // after the last value
-  }
-
+  int i = strlen(json) -1;
+  json[i++] = ']';                              // last , to ]}
+  json[i++] = '}';
+  json[i] = '\0';                           
+  
   return pos;
 }

@@ -69,25 +69,6 @@ const char *dashboardHtml = R"====(
     border:1px solid black;
   }
 
-  .bottom {
-    position: relative;
-  }
-  .bottom-left {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    bottom: 5%;
-    left: 10%;
-  }
-  .bottom-right {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    bottom: 5%;
-    right: 10%;
-    text-align: right;
-  }
-
   .gTitle {
     font-size: 50%;
     font-weight: normal;
@@ -97,25 +78,29 @@ const char *dashboardHtml = R"====(
   }
 
   .kW {
-    font-size: 100%;
+    font-size: 90%;
     font-weight: normal;
-    fill: darkgrey;
+    fill: black;
     alignment-baseline: middle;
     dominant-baseline: middle;
     text-anchor: middle;
   }
 
-  .underkW {
+  .kWh {
     font-size: 40%;
     font-weight: normal;
-    fill: darkgrey;
+    fill: black;
     alignment-baseline: middle;
     dominant-baseline: middle;
     text-anchor: middle;
+  }
+
+  .right {
+    text-anchor: end;
   }
 
   #gauges {
-    width: 95%;
+    width: 100%;
     margin: auto;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -200,6 +185,7 @@ const char *dashboardHtml = R"====(
   <!--
 
     Guage presentation
+    &#8451;   Degrees C
 
   -->
   <div id="gauges">
@@ -210,9 +196,9 @@ const char *dashboardHtml = R"====(
             stroke="gold"
             stroke-dasharray="0, 251">
           </use>
-          <text class="gTitle" x="50" y="28">Solar</text>
-          <text id="solarGT" class="kW" x="50" y="50">...</text>
-          <text id="solarGT2" class="underkW" x="50" y="60">...</text>
+          <text class="gTitle" x="50" y="26">Solar</text>
+          <text id="solarGT" class="kW" x="50" y="46">...</text>
+          <text id="solarGT2" class="kWh" x="50" y="59">...</text>
         </svg>
       </div>
 
@@ -224,56 +210,61 @@ const char *dashboardHtml = R"====(
             stroke-dasharray="0, 251"
             transform="">
           </use>
-          <text class="gTitle" x="50" y="28">Battery</text>
-          <text id="batteryGT" class="kW" x="50" y="50">...</text>
+          <text class="gTitle" x="50" y="26">Battery</text>
+          <text id="batteryGT" class="kW" x="50" y="46">...</text>
+          <text id="batteryGTIn" class="kWh right" x="63" y="56"></text>
+          <text id="batteryGTOut" class="kWh right" x="63" y="63"></text>
         </svg>
       </div>
 
       <div>
         <svg viewbox="0 0 100 65">
           <use id="gridG" href="#gauge"
-            stroke="cornflowerblue"
+            stroke="orangered"
             stroke-dashoffset="-73"
             stroke-dasharray="0, 251"
             transform="">
           </use>
-          <text class="gTitle" x="50" y="28">Grid</text>
-          <text id="gridGT" class="kW" x="50" y="50">...</text>
-          <text id="gridGT2" class="underkW" x="50" y="60"></text>
+          <text class="gTitle" x="50" y="26">Grid</text>
+          <text id="gridGT" class="kW" x="50" y="46">...</text>
+          <text id="gridGTIn" class="kWh right" x="63" y="56"></text>
+          <text id="gridGTOut" class="kWh right" x="63" y="63"></text>
         </svg>
       </div>
 
       <div>
         <svg viewbox="0 0 100 65">
           <use id="houseG" href="#gauge"
-            stroke="darkorange"
+            stroke="cornflowerblue"
             stroke-dasharray="0, 251"
             transform="">
           </use>
-          <text class="gTitle" x="50" y="28">Demand</text>
-          <text id="houseGT" class="kW" x="50" y="50">...</text>
-          <text id="houseGT2" class="underkW" x="50" y="60"></text>
+          <text class="gTitle" x="50" y="26">Demand</text>
+          <text id="houseGT" class="kW" x="50" y="46">...</text>
+          <text id="houseGT2" class="kWh" x="50" y="59"></text>
         </svg>
       </div>
 
       <div>
-        <svg viewbox="0 0 100 65">
+        <svg viewbox="0 0 100 66">
           <use id="batterySOCG" href="#gauge"
             stroke="darkseagreen"
             stroke-dasharray="0, 251">
           </use>
           <text class="gTitle" x="50" y="28">Charge level</text>
-          <text id="batterySOCGT" class="kW" x="50" y="50">...</text>
+          <text id="batterySOCGT" class="kW" x="50" y="46">...</text>
+          <text id="batterySOCGT2" class="kWh" x="50" y="56"></text>
+          <text id="batterySOCGTH" class="kWh" x="50" y="63"></text>
           <use href="#1020-tick"</use>
         </svg>
       </div>
 
 
-      <div class="bottom">
-      <div class="bottom-right">
-        <span>Inverter temp. <label id="temp"></label>&#8451;</span>
-        <span><label id="time">...</label></span>
-      </div>
+      <div>
+        <svg viewbox="0 0 100 65">
+          <text id="temp" class="kWh right" x="92" y="54"></text>
+          <text id="time" class="kWh right" x="92" y="62"></text>
+        </svg>
       </div>
 
   </div>
@@ -289,9 +280,9 @@ const char *dashboardHtml = R"====(
     //  Inverter register addresses
     //
     const SOLAR_R           = 33057;
-    const BATTCD_R          = 33135;
+    const BATTCD_R          = 33135;          // 0 charge, 1 discharge
     const BATTERY_R         = 33149;
-    const GRID_R            = 33130;
+    const GRID_R            = 33130;          // +ve export, -ve import
     const BATTSOC_R         = 33139;
     const TEMP_R            = 33093;
 
@@ -309,10 +300,15 @@ const char *dashboardHtml = R"====(
     const GRID_EXP_TODAY_R  = 33175;
     const GRID_EXP_YEST_R   = 33176;
 
-    const HOUSE_R           = 33147           // calculated locally
-    const HOUSE_TODAY_R     = 33179
+    const HOUSE_R           = 33147;
+    const HOUSE_TODAY_R     = 33179;
 
-    //  Timing constants
+    //  Calculated fields
+    //
+    const BATTERY_KWH_R     = 33303;
+    const BATTERY_HOURS_R   = 33304;
+
+    //  various constants
     //
     const FETCH_TIMEOUT       = 5000;
     const SERVER_INTERVAL     = 2000;
@@ -322,13 +318,33 @@ const char *dashboardHtml = R"====(
     const DATA_OLD            = 5000;
     const KW_DECIMALS         = 2;
     const KWH_DECIMALS        = 1;
+    const FPS                 = 30;         // 30 fps is plenty
+    const BATTERY_KWH         = 3.5 *2      // battery total capacity
+
+    //  Chars
+    //
+    const LEFT_ARROW          = "&#8592;";
+    const RIGHT_ARROW         = "&#8594;";
+    const LEFTRIGHT_ARROW     = "&#8596;";
+
+    //  Register request constants
+    //
+    const ADDRESS = [SOLAR_R+.2, GEN_TODAY_R,
+                    BATTERY_R+.2, BATTCD_R, BATTSOC_R, CHG_TODAY_R, DIS_TODAY_R,
+                    GRID_R+.2, GRID_IMP_TODAY_R, GRID_EXP_TODAY_R,
+                    HOUSE_R, HOUSE_TODAY_R,
+                    TEMP_R];
+    const ADDRESS_LENGTH = ADDRESS.length;
+    const ADDRESS_S = "?address=" + ADDRESS.join();
+    console.log(ADDRESS_S);
 
     //  Globals
     //
-    let newJsonTime = new Date()                            // time data returned by callServer
     let newJson = {};                                       // latest data returned by callServer
+    let newJsonTime = new Date()                            // time data returned by callServer
     let dispJson = {};                                      // latest data displayed by updateDashboard
 
+    let lastFrame = 0;                                      // only ever one anim frame request at a time
     let lastFrameTime = new Date();                         // time updateDashboard last called
 
 
@@ -356,6 +372,14 @@ const char *dashboardHtml = R"====(
       return url;
     }
 
+    //  Make sure there is only one animation frame request made at a time
+    //  These all seem to get honoured eventually and backup if called in the background
+    //
+    function requestAnimFrame() {
+        cancelAnimationFrame(lastFrame);
+        lastFrame = requestAnimationFrame(updateDashboard);
+    }
+
     //  Call the server for a data update & calls itself once the query completes
     //  When I get new data kick off the dashboard, assuming its stopped animating the previous update
     //  Variable length async response depending how long the fetch takes
@@ -368,41 +392,30 @@ const char *dashboardHtml = R"====(
       //
       if(new Date - lastFrameTime > FRAME_OLD) {
         console.log("no frames");
-        requestAnimationFrame(updateDashboard);
+        requestAnimFrame();                                 // see if we can get an anim frame
         setTimeout(callServer, FRAME_CHECK, freq, url);     // keep checking more frequently
         return;
       }
 
-      //  Callback to the server for new data - asynchronous so finishes later
+      //  Callback to the server for new data - asynchronous this function could return first
       //
-      const controller = new AbortController()                                            // watchdog for max fetch time
+      const controller = new AbortController()              // watchdog for max fetch time
       const fetchTimeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
 
-      fetch('http://'
-          + url
-          + '/R?address=33057.2,33135,33149.2,33139,33130.2,33093,33035,33171,33179',
-            { signal: controller.signal })
+      fetch("http://" + url + "/R" + ADDRESS_S, { signal: controller.signal })
 
         .then(response => response.json())                  // header
 
         .then(json => {                                     // body
-          newJson = json;                                   // newJson is the new target for display
+
+          for(let i = 0; i < ADDRESS_LENGTH; i++) {         // convert passed value only to name/value pairs
+            newJson[ADDRESS[i].toFixed(0)] = json["data"][i];
+          };
           newJsonTime = Date.now();
-
-          if(newJson[BATTCD_R] == 0) {
-            newJson[BATTERY_R] *= -1;                       // Make battery signed - 0=chg, 1=dischg
-          }
-          delete newJson[BATTCD_R];                         // do this here to avoid issues with animation frames on the 0/1 value
-
-          newJson[HOUSE_R] = newJson[SOLAR_R]
-                           - newJson[GRID_R]
-                           + newJson[BATTERY_R];
-          if(isNaN(newJson[HOUSE_R])) {                     // don't let NaNs through
-            delete newJson[HOUSE_R];
-          }
+          adjustNewJson();
           console.log(newJson);
 
-          requestAnimationFrame(updateDashboard);           // Update the dashboard with new values
+          requestAnimFrame();                               // Update the dashboard with new values
           })
 
         .catch(err => console.error(err))
@@ -413,74 +426,89 @@ const char *dashboardHtml = R"====(
           });
     }
 
+    //  Adjust inbound inverter data
+    //  Local changes to newJson - generally +ve = generation, -ve = consumption
+    //
+    //  Performing this before any display means animation etc will work for calculated values
+    //
+    function adjustNewJson() {
+
+          //  Same scale as other values simplifies the change detection
+          //
+          newJson[BATTSOC_R] = newJson[BATTSOC_R] *10;
+
+          //  Convert battery charge/discharge to a signed value
+          //  -ve = using power to charge
+          //  +ve = supplying power
+          //
+          if(newJson[BATTCD_R] == 1) {                      // Make battery signed - 0=chg, 1=dischg
+            newJson[BATTERY_R] *= -1;
+          }
+          delete newJson[BATTCD_R];
+
+          //  kWh in the battery - hard coded to physical battery capacity
+          //
+          const capacity1 = BATTERY_KWH /100;               // 1% of battery capacity in kWh
+          newJson[BATTERY_KWH_R] = newJson[BATTSOC_R] *capacity1;
+
+          //  Hours battery remaining at the current rate of discharge
+          //  ..to 10% capacity, never goes -ve
+          //
+          let perc80 = newJson[BATTERY_KWH_R] - (capacity1 *20);          // capacity in kWh to 20% (empty)
+          newJson[BATTERY_HOURS_R] = Math.max(perc80 / -newJson[BATTERY_R] *10, 0);
+          if (newJson[BATTERY_R] ==0) newJson[BATTERY_HOURS_R] = 0;
+    }
+
+
     //  Update the dashboard
     //  Once no change is detected, waits on the server response before starting again
     //  Called by the browser animation API so no fixed frequency
     //
     function updateDashboard() {
       console.log("frames");
-
       lastFrameTime = new Date;                             // detect browser slowing screen updates
 
-      //  Move dispJson towards newJson incrementally
+      //  Move dispJson towards newJson incrementally for each register value
       //  Keep a record of anything changing so we know when to stop asking for animation frames
       //  CSS transition is not used because of the mirrored gauges and going through 0
       //
       let changes = false                                   // posit nothing will change
       for(const reg in newJson) {
-        if(dispJson[reg] === undefined) {                   // first time through - copy the latest data
-          dispJson[reg] = newJson[reg];
-          changes = true;
-          continue;
-        }
+        let oldV = dispJson[reg];
+        let targetV = newJson[reg];
+        const alpha = .8 /FPS                             // exponential towards the new value @ ~60fps
+        let newV = (alpha * targetV) + ((1- alpha) * oldV);
+        if(isNaN(newV)) newV = targetV;                     // first time through - jump to the target
+        dispJson[reg] = newV;
 
-        let delta = newJson[reg] - dispJson[reg];
-        if(Math.abs(delta) <= .5 ) {                        // delta is close enough - copy the latest data
-          dispJson[reg] = newJson[reg];
-          continue;
-        }
-
-        let change = Math.max(Math.abs(delta)/60, 1)
-                      * Math.sign(delta);                   // proportional & minimum move per frame, +ve or -ve
-        dispJson[reg] += change;
-        changes = true;                                     // at least one value moved!
+        if(Math.abs(targetV - newV) > 10) changes = true;   // admit something moved significantly
       }
 
-
-      //  Update the gauges from dispJson
-      //  doing any math e.g. /1 ensures no NaN's get through
+      //  Update the gauges from dispJson for smooth transition
       //
-      setValue("solarG",      0,     4000, dispJson[SOLAR_R],   (dispJson[SOLAR_R]  /1000).toFixed(KW_DECIMALS) + " kW");
-      setValue("batteryG",    -3600, 3600, dispJson[BATTERY_R], (dispJson[BATTERY_R]/1000).toFixed(KW_DECIMALS) + " kW");
-      setValue("gridG",       -4000,10000, -dispJson[GRID_R],   -(dispJson[GRID_R]  /1000).toFixed(KW_DECIMALS) + " kW");
-      setValue("batterySOCG", 0,      100, dispJson[BATTSOC_R], (dispJson[BATTSOC_R]/1).toFixed(0) + "%");
-      setValue("houseG",      0,    10000, dispJson[HOUSE_R],   -(dispJson[HOUSE_R] /1000).toFixed(KW_DECIMALS) + " kW");
+      setValue("solarG",      0,     4000, dispJson[SOLAR_R],   kW(dispJson[SOLAR_R]));
+      setValue("batteryG",    -3600, 3600, dispJson[BATTERY_R], lrArrow(dispJson[BATTERY_R]) + kW(Math.abs(dispJson[BATTERY_R])));
+      setValue("gridG",       -10000,4000, dispJson[GRID_R],    lrArrow(dispJson[GRID_R]) + kW(Math.abs(dispJson[GRID_R])));
+      setValue("houseG",      0,    10000, dispJson[HOUSE_R],   kW(dispJson[HOUSE_R]));
+      setValue("batterySOCG", 0,     1000, dispJson[BATTSOC_R], (dispJson[BATTSOC_R]/10).toFixed(0) + "%");
 
-
-      if(!isNaN(dispJson[GEN_TODAY_R])) {                   // solar generated
-        let net = (dispJson[GEN_TODAY_R])/10;
-        document.getElementById("solarGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
-      }
-
-      if(!isNaN(dispJson[GRID_IMP_TODAY_R])) {              // grid imported
-        let net = (dispJson[GRID_IMP_TODAY_R])/10;
-        document.getElementById("gridGT2").innerHTML = net.toFixed(KWH_DECIMALS) + " kWh";
-      }
-
-      if(!isNaN(dispJson[HOUSE_TODAY_R])) {                 // house used
-        let net = (dispJson[HOUSE_TODAY_R])/10;
-        document.getElementById("houseGT2").innerHTML = -net.toFixed(KWH_DECIMALS) + " kWh";
-      }
-
-
-      if(!isNaN(dispJson[TEMP_R]))
-        document.getElementById("temp").innerHTML = (dispJson[TEMP_R]/10).toFixed(1);
-
-      //  If there are changes - request more animation frames = ~60fps or more
+      //  Update from newJson for direct to the target value
       //
-      if(changes)
-        requestAnimationFrame(updateDashboard);
+      document.getElementById("solarGT2").innerHTML =       kWh(newJson[GEN_TODAY_R]);
+      document.getElementById("batteryGTIn").innerHTML =    LEFT_ARROW + kWh(newJson[DIS_TODAY_R]);
+      document.getElementById("batteryGTOut").innerHTML =   RIGHT_ARROW + kWh(newJson[CHG_TODAY_R]);
+      document.getElementById("batterySOCGT2").innerHTML =  kWh(newJson[BATTERY_KWH_R]);
+      document.getElementById("batterySOCGTH").innerHTML =  hours(newJson[BATTERY_HOURS_R]);
+      document.getElementById("gridGTIn").innerHTML =       LEFT_ARROW + kWh(newJson[GRID_IMP_TODAY_R]);
+      document.getElementById("gridGTOut").innerHTML =      RIGHT_ARROW + kWh(newJson[GRID_EXP_TODAY_R]);
+      document.getElementById("houseGT2").innerHTML =       kWh(newJson[HOUSE_TODAY_R]);
+      document.getElementById("temp").innerHTML =           "Inverter temp. "+ (newJson[TEMP_R]/10 || 0).toFixed(1) + "&#8451;";
+
+      //  If there were changes - request more animation frames @ ~60fps
+      //
+      if(changes) setTimeout(requestAnimFrame, 1000 /FPS, updateDashboard);
     }
+
 
     //  Update the time every second
     //  Warn if the data is getting old
@@ -488,12 +516,46 @@ const char *dashboardHtml = R"====(
     function updateTime() {
       let now = new Date();
 
-      if(now - newJsonTime < DATA_OLD) {
-        document.getElementById("time").innerHTML = "Updated at " + now.toLocaleTimeString();
+      if(now - newJsonTime > DATA_OLD) {
+        document.getElementById("time").textContent = "Waiting for data";
         return;
       }
 
-      document.getElementById("time").innerHTML = "Waiting for data";
+      document.getElementById("time").textContent = "Updated at " + now.toLocaleTimeString();
+    }
+
+    //  Returns the label format for passed hours
+    //
+    function hours(val) {
+      if(isNaN(val)) return "...";
+      if(val == 0) return "";                     // charging
+      if(val < 1) return "~ " + Math.floor(60 * val) + " mins capacity";
+      return "~ " + Math.floor(val) + " hrs capacity";
+    }
+
+    //  Returns the Label format for kW passed the value in watts
+    //
+    function kW(val) {
+      if(isNaN(val)) return "...";
+      return (val/1000).toFixed(KW_DECIMALS) + "&thinsp;kW";
+    }
+
+    //  Returns the label for kWh passed the value in 10x watt hours
+    //
+    function kWh(val) {
+      if(isNaN(val)) return "...";
+      return (val/10).toFixed(KWH_DECIMALS) + "&thinsp;kWh";
+    }
+
+    //  Format -ve numbers as left arrow, +ve numbers as right arrow
+    //    &#8592;   Left arrow
+    //    &#8594;   Right arrow
+    //    &#8596;   Left/Right arrow
+    //
+    function lrArrow(val) {
+      if(val <= 0) return LEFT_ARROW;
+      if(val >= 0)  return RIGHT_ARROW;
+      return "";
     }
 
     //  Set the value and value text for the passed gauge ID
@@ -502,13 +564,13 @@ const char *dashboardHtml = R"====(
     //  Where min is -ve the zero point is always at 12 o'clock
     //  Scales left/right of the central zero point can be different
     //
-    function setValue(id, min, max, val, valDisp) {
+    function setValue(id, min, max, val, label) {
 
       if(isNaN(val)) return;                      // no value - ignore
 
       //  Value text
       //
-      document.getElementById(id + "T").textContent = valDisp;
+      document.getElementById(id + "T").innerHTML = label;
 
       //  Min is +ve, draw from the left end
       //

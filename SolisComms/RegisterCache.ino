@@ -52,8 +52,6 @@ int registerIndex(int address, int size = -1) {
 long getRegister(int address, int size){
   int i = registerIndex(address, size);
   regCache[i].age = millis();                     // update age on all requests
-  if(regCache[i].state != STATE_VALID) return 0;  // no data
-
   return regCache[i].value;
 }
 
@@ -64,10 +62,11 @@ long getRegister(int address, int size){
 void getJSON(int address, int size, char *json) {
   int i = registerIndex(address, size);           // find the cache entry
   regCache[i].age = millis();                     // update age on all requests
+  
   if(regCache[i].state != STATE_VALID) return;    // no data
 
   char addressS[20], valueS[20];                  // format as strings
-  itoa(address, addressS, 10);
+  itoa(address, addressS, 10);                    // base10
   itoa(regCache[i].value, valueS, 10);
 
   strcat(json, ",\"");                            // construct the json entry
