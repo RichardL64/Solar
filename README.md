@@ -11,6 +11,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
  - Arduino web server & internal cross client cache
  - Inverter integration working with Modbus/RS485 connection.
  - Basic HTML/JS Dashboard consumer showing real time/~2 second updates.
+ - Todays total kWh added.
  - mDNS hostname to IP lookup
  - Basic wifi reconnection on loss logic
  - Integration with browser animation callbacks to reduce load for background windows
