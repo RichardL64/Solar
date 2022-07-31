@@ -28,7 +28,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 
 ## Current dashboard:
-![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard%20on%20mobile.PNG)
+![alt text](https://github.com/RichardL64/Solar/blob/main/Solis%20Dashboard.jpg)
 
 ## Current breadboard hardware:
  - Arduino Nano 33 IOT
