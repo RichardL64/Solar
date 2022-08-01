@@ -407,7 +407,6 @@ const char *dashboardHtml = R"====(
         .then(response => response.json())                  // header
 
         .then(json => {                                     // body
-
           for(let i = 0; i < ADDRESS_LENGTH; i++) {         // convert passed value only to name/value pairs
             newJson[ADDRESS[i].toFixed(0)] = json["data"][i];
           };
@@ -435,7 +434,8 @@ const char *dashboardHtml = R"====(
 
           //  Same scale as other values simplifies the change detection
           //
-          newJson[BATTSOC_R] = newJson[BATTSOC_R] *10;
+          newJson[BATTSOC_R] *= 10;
+          newJson[TEMP_R] *= 10;
 
           //  Convert battery charge/discharge to a signed value
           //  -ve = using power to charge
@@ -446,16 +446,16 @@ const char *dashboardHtml = R"====(
           }
           delete newJson[BATTCD_R];
 
-          //  kWh in the battery - hard coded to physical battery capacity
+          //  kWh *10 in the battery - hard coded to physical battery capacity
           //
           const capacity1 = BATTERY_KWH /100;               // 1% of battery capacity in kWh
-          newJson[BATTERY_KWH_R] = newJson[BATTSOC_R] *capacity1;
+          newJson[BATTERY_KWH_R] = Math.floor(newJson[BATTSOC_R] *capacity1);
 
           //  Hours battery remaining at the current rate of discharge
-          //  ..to 10% capacity, never goes -ve
+          //  ..to 20% capacity, never goes -ve
           //
-          let perc80 = newJson[BATTERY_KWH_R] - (capacity1 *20);          // capacity in kWh to 20% (empty)
-          newJson[BATTERY_HOURS_R] = Math.max(perc80 / -newJson[BATTERY_R] *10, 0);
+          let perc80 = Math.max(newJson[BATTERY_KWH_R] /10 - (capacity1 *20), 0);
+          newJson[BATTERY_HOURS_R] = Math.max(perc80 / -newJson[BATTERY_R] *1000, 0);
           if (newJson[BATTERY_R] ==0) newJson[BATTERY_HOURS_R] = 0;
     }
 
@@ -469,20 +469,23 @@ const char *dashboardHtml = R"====(
       lastFrameTime = new Date;                             // detect browser slowing screen updates
 
       //  Move dispJson towards newJson incrementally for each register value
+      //  Ignore completely empty, all zero, datasets
       //  Keep a record of anything changing so we know when to stop asking for animation frames
       //  CSS transition is not used because of the mirrored gauges and going through 0
       //
-      let changes = false                                   // posit nothing will change
+      let empty = 0;                                              // posit empty dataset
+      let changes = dispJson[ADDRESS[0].toFixed()] == undefined;  // posit nothing will change, except first time through
       for(const reg in newJson) {
-        let oldV = dispJson[reg];
         let targetV = newJson[reg];
-        const alpha = .8 /FPS                             // exponential towards the new value @ ~60fps
+        let oldV = dispJson[reg] || targetV;                // first time through take the target value
+        const alpha = .8 /FPS                               // exponential towards the new value @ ~60fps
         let newV = (alpha * targetV) + ((1- alpha) * oldV);
-        if(isNaN(newV)) newV = targetV;                     // first time through - jump to the target
         dispJson[reg] = newV;
 
-        if(Math.abs(targetV - newV) > 10) changes = true;   // admit something moved significantly
+        empty += targetV;                                   // detect when all of the dataset is 0
+        if(Math.abs(targetV - newV) > 5) changes = true;    // admit something moved significantly
       }
+      if(!empty || !changes) return;                        // no data or nothing changed --->
 
       //  Update the gauges from dispJson for smooth transition
       //
@@ -502,11 +505,11 @@ const char *dashboardHtml = R"====(
       document.getElementById("gridGTIn").innerHTML =       LEFT_ARROW + kWh(newJson[GRID_IMP_TODAY_R]);
       document.getElementById("gridGTOut").innerHTML =      RIGHT_ARROW + kWh(newJson[GRID_EXP_TODAY_R]);
       document.getElementById("houseGT2").innerHTML =       kWh(newJson[HOUSE_TODAY_R]);
-      document.getElementById("temp").innerHTML =           "Inverter temp. "+ (newJson[TEMP_R]/10 || 0).toFixed(1) + "&#8451;";
+      document.getElementById("temp").innerHTML =           "Inverter temp. "+ (newJson[TEMP_R]/100 || 0).toFixed(1) + "&#8451;";
 
-      //  If there were changes - request more animation frames @ ~60fps
+      //  Request more animation frames @ ~n fps
       //
-      if(changes) setTimeout(requestAnimFrame, 1000 /FPS, updateDashboard);
+      setTimeout(requestAnimFrame, 1000 /FPS, updateDashboard);
     }
 
 
@@ -515,7 +518,6 @@ const char *dashboardHtml = R"====(
     //
     function updateTime() {
       let now = new Date();
-
       if(now - newJsonTime > DATA_OLD) {
         document.getElementById("time").textContent = "Waiting for data";
         return;
@@ -529,8 +531,9 @@ const char *dashboardHtml = R"====(
     function hours(val) {
       if(isNaN(val)) return "...";
       if(val == 0) return "";                     // charging
-      if(val < 1) return "~ " + Math.floor(60 * val) + " mins capacity";
-      return "~ " + Math.floor(val) + " hrs capacity";
+      if(val < 1) return "~ " + Math.round(60 * val) + " mins capacity";
+      return "~ " + Math.round(val*10/5)/10*5 + " hrs capacity";
+//      return "~ " + Math.round(val*2)/50 + " hrs capacity";
     }
 
     //  Returns the Label format for kW passed the value in watts
