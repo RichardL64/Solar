@@ -6,6 +6,8 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 ## Current state:
 
+ - Shelly control integration to enhance SOLIC functionality
+ 
  - Self contained/zero install dashboard served from the Arduino at path solis.local
  
  - Arduino web server & internal cross client cache
