@@ -56,3 +56,4 @@ function readJSON(res, error_code, error_msg, ud) {
 print('Starting');
 getSOC();
 let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
+
