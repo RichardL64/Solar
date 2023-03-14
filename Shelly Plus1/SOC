@@ -1,0 +1,61 @@
+/*
+  Read Solis inverter battery SOC register to control the ouput switch
+  Only turn on if the battery is over a threshold charge
+  
+  Uses a custom inverter server side interface
+  
+  Hysteresis managed by slow SOC check frequency
+  
+  Use case
+    Prevent simple immersion diverter, e.g. SOLIC200 from diverting
+    solar power before the battery is full
+  
+  Todo
+    Local button should override - either toggle or 1 hour on
+    
+  R.Lincoln  March 2023
+
+*/
+
+let inverterIP = '192.168.1.143';   // Fixed inverter IP (mdns not working)
+let socThreshold = 80;              // on above this % full
+let checkSeconds = 60 *5;           // seconds between checks
+
+//  Call the inverter, retreive 33139 - Battery state of charge %
+//  http://192.168.1.143/R?a=33139
+//
+function getSOC() {
+  Shelly.call("HTTP.GET", 
+    { url: 'http://' + inverterIP + '/R?a=33139'},
+    readJSON,
+    null);
+}
+
+//  Process the response JSON
+//  e.g. {"data":[64]}
+//  If the data value is over the threshold - turn on the switch
+//  
+function readJSON(res, error_code, error_msg, ud) {
+  //  Ignore any http error
+  if (res.code !== 200) return;
+
+  //  Extract the  JSON value
+  let body = JSON.parse(res.body);
+  let soc = body.data[0];  
+  
+  //  Compare with the threshold
+  let on = soc >= socThreshold;
+  print('Battery:', soc, '%, on:', on);
+
+  //  Set the local switch
+  Shelly.call("switch.set",
+    { id: 0, on: on },
+    null, null);
+}
+
+//  Periodically check the percentage
+//
+print('Starting');
+getSOC();
+let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
+
