@@ -44,6 +44,7 @@ function readJSON(res, error_code, error_msg) {
 
   let body = JSON.parse(res.body);         // extract JSON values
   let soc = body.data[0];  
+  if (soc === 0) return;                   // inverter buffer empty, ignore
   
   if (soc >= socOnThreshold) on = true;    // on/off hysteresis
   if (soc <= socOffThreshold) on = false;
@@ -59,3 +60,4 @@ function readJSON(res, error_code, error_msg) {
 print('Starting');
 getSOC();
 let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
+
