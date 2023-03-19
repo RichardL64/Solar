@@ -1,14 +1,15 @@
 /*
 
   SOC
-  Read Solis inverter battery SOC register to control the ouput switch
-  Only turn on if the battery is over a threshold charge
+  Read Solis inverter battery SOC & solar generation registers to control the ouput switch
+  Only turn on if the battery is over a threshold charge & there is solar energy
   
   Uses a custom inverter server side interface
   
   Use case
     Prevent simple immersion diverter, e.g. SOLIC200 from diverting
     solar power before the battery is full
+    The SOLIC monitors grid output to decide when there is exess energy
   
   Todo
     Local button should override - either toggle or 1 hour on
@@ -21,35 +22,41 @@ let inverterIP = '192.168.1.143';   // Fixed inverter IP (mdns not working)
 let checkSeconds = 60 *1;           // seconds between checks
 
 let socOnThreshold = 95;            // on above this % full
+let solarThreshold = 100;           // and generating watts
+
 let socOffThreshold = 90;           // off below this % full
 
-//  Call the inverter, retreive 33139 - Battery state of charge %
-//  http://192.168.1.143/R?a=33139
+//  Call the inverter, retreive 33139 - Battery state of charge % & solar generation
+//  http://192.168.1.143/R?a=33139,33057.2
 //
 function getSOC() {
   Shelly.call("HTTP.GET", 
-    { url: 'http://' + inverterIP + '/R?a=33139'},
+    { url: 'http://' + inverterIP + '/R?a=33139,33057.2'},
 //    { url: 'http://solis.local/R?a=33139'},
     readJSON,
     null);
 }
 
 //  Process the response JSON
-//  e.g. {"data":[64]}
+//  e.g. {"data":[64,100]}
 //  If the data value is over the threshold - turn on the switch
 //  
 function readJSON(res, error_code, error_msg) {
-  if (error_code !== 0) return;              // exit on error
+  if (error_code !== 0) return;                  // exit on error
   if (res.code !== 200) return;        
 
-  let body = JSON.parse(res.body);           // extract JSON values
-  let soc = body.data[0];  
-  if (soc === 0) return;                     // inverter buffer empty, ignore
+  let body = JSON.parse(res.body);               // extract JSON values
+  let soc = body.data[0]; 
+  let solar = body.data[1]; 
+  if (soc === 0) return;                         // inverter buffer empty, ignore
 
-  print('Battery:', soc);
+  print('Battery:', soc, ' Solar:', solar);
   
-  if (soc >= socOnThreshold) switchOn(true); // on/off hysteresis
-  if (soc <= socOffThreshold) switchOn(false);
+  if (soc >= socOnThreshold && solar >= solarThreshold) 
+    switchOn(true);                              // battery full & generating
+
+  if (soc <= socOffThreshold || solar < solarThreshold)
+    switchOn(false);                             // battery not full or no solar
 
 }
 
@@ -68,4 +75,3 @@ function switchOn(onOff) {
 print('Starting');
 getSOC();
 let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
-
