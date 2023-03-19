@@ -26,7 +26,8 @@ let solarThreshold = 100;           // and generating watts
 
 let socOffThreshold = 90;           // off below this % full
 
-//  Call the inverter, retreive 33139 - Battery state of charge % & solar generation
+//  Call the inverter, retreive 33139   - Battery state of charge % 
+//                              33057.2 - Solar generation watts
 //  http://192.168.1.143/R?a=33139,33057.2
 //
 function getSOC() {
@@ -75,3 +76,4 @@ function switchOn(onOff) {
 print('Starting');
 getSOC();
 let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
+
