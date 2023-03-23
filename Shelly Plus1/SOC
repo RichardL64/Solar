@@ -11,29 +11,34 @@
     solar power before the battery is full
     The SOLIC monitors grid output to decide when there is exess energy
   
-  Todo
-    Local button should override - either toggle or 1 hour on
-    
+    The button toggles a long switch override
+        
   R.Lincoln  March 2023
 
 */
 
-let inverterIP = '192.168.1.143';   // Fixed inverter IP (mdns not working)
-let checkSeconds = 60 *1;           // seconds between checks
+let CONFIG = {
+  inverterIP:       '192.168.1.143',   // Fixed inverter IP (mdns not working)
+  checkSeconds:     60,                // seconds between checks
+  buttonSeconds:    60 *60,            // seconds on after the button push
 
-let socOnThreshold = 95;            // on above this % full
-let solarThreshold = 100;           // and generating watts
+  socOnThreshold:   95,                // on above this % full
+  socOffThreshold:  90,                // off below this % full
+  solarThreshold:   100                // on generating at lest this watts
+};
 
-let socOffThreshold = 90;           // off below this % full
+let buttonPushed = false;              // flags when the button overrtide is pushed
+let buttonTimer = undefined;           // only runs when the button is pushed
 
 //  Call the inverter, retreive 33139   - Battery state of charge % 
 //                              33057.2 - Solar generation watts
 //  http://192.168.1.143/R?a=33139,33057.2
 //
 function getSOC() {
+  if (buttonPushed === true) return;         // if the button was pushed - do nothing
+  
   Shelly.call("HTTP.GET", 
-    { url: 'http://' + inverterIP + '/R?a=33139,33057.2'},
-//    { url: 'http://solis.local/R?a=33139'},
+    { url: 'http://' + CONFIG.inverterIP + '/R?a=33139,33057.2'},
     readJSON,
     null);
 }
@@ -52,11 +57,11 @@ function readJSON(res, error_code, error_msg) {
   if (soc === 0) return;                         // inverter buffer empty, ignore
 
   print('Battery:', soc, '%  Solar:', solar, 'W');
-  
-  if (soc >= socOnThreshold && solar >= solarThreshold) 
+ 
+  if (soc >= CONFIG.socOnThreshold && solar >= CONFIG.solarThreshold) 
     switchOn(true);                              // battery full & generating
 
-  if (soc <= socOffThreshold || solar < solarThreshold)
+  if (soc <= CONFIG.socOffThreshold || solar < CONFIG.solarThreshold)
     switchOn(false);                             // battery not full or no solar
 
 }
@@ -71,9 +76,37 @@ function switchOn(onOff) {
     null, null);  
 }
 
-//  Periodically check the percentage
+//  Detect the button push
+//  If pushed the normal switching is disalbed and a new timer setup to revert
+//
+function handler(event, user_data) {
+  print('id: ', event.info.id, ' event:', event.info.event);
+ 
+  if (event.info.event !== 'single_push') 
+    return;
+  
+  //  If the button was pushed when on - revert to periodic checks
+  if (buttonPushed === true) {
+    print('Button stop');
+    buttonPushed = false;
+    Timer.clear(buttonTimer);
+    return;
+  };
+
+  // if the button was pushed and off - turn on and set a timer to reset later
+  print('Button start');
+  buttonPushed = true;
+  buttonTimer = Timer.set(1000 *CONFIG.buttonSeconds, false, 
+                           function() {buttonPushed = false;}, 
+                           null);
+  switchOn(true);
+}
+Shelly.addEventHandler(handler, null);
+
+//  Flag starting and kick off the continuous timer
 //
 print('Starting');
 getSOC();
-let timer = Timer.set(1000 *checkSeconds, true, getSOC, null);
+let timer = Timer.set(1000 *CONFIG.checkSeconds, true, getSOC, null);
 
+// End
