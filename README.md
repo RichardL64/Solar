@@ -6,7 +6,7 @@ Arduino seems lighter/simpler for, effectively an HTML data and Webserver front 
 
 ## Current state:
 
- - Shelly control integration to enhance SOLIC functionality - turn on when batteries are full and solar in production
+ - Shelly control integration to enhance SOLIC functionality - turn on when batteries are full and solar in production. + POC off the shelf device control accessing the JSON/HTTP arduino interface.
  
  - Self contained/zero install dashboard served from the Arduino at path solis.local
  
